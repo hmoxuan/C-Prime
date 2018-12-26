@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "limits", "limits\limits.vcxproj", "{60CE5586-7F6B-4D26-82CB-F31B4B5E672F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60CE5586-7F6B-4D26-82CB-F31B4B5E672F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{60CE5586-7F6B-4D26-82CB-F31B4B5E672F}.Debug|Win32.Build.0 = Debug|Win32
+		{60CE5586-7F6B-4D26-82CB-F31B4B5E672F}.Release|Win32.ActiveCfg = Release|Win32
+		{60CE5586-7F6B-4D26-82CB-F31B4B5E672F}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
