@@ -29,6 +29,22 @@ int _tmain(int argc, _TCHAR* argv[])
    cout << "Minimum int value = " << INT_MIN << endl;
    cout << "Bits per byte = " << CHAR_BIT << endl;
 
+   //---------------------------------------------
+   // C++11 Initialization variable
+   //---------------------------------------------
+   int hamburgers = { 24 };  //set hamburgers to 24
+//   int emus{7};//set emus to 7
+   int rheas = { 12 };  //set rheas to 12
+//   int rocs = {};  // set rocs to 0
+//   int psychics{};  //set psychis to 0
+
+   cout << " hamburgers = " << hamburgers << endl;
+//   cout << " emus = " << emus;
+   cout << " rheas = " << rheas << endl;
+//   cout << " rocs = " << rocs << endl;
+//   cout << " psyschics = " << psychics;
+
+
     system("pause");
 	return 0;
 }
