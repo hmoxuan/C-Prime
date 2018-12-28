@@ -27,6 +27,9 @@
     <ClInclude Include="arrayone.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="chapter4string.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -36,6 +39,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="arrayone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="chapter4string.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

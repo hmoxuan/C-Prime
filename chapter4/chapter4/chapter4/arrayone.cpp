@@ -30,4 +30,15 @@ void arrayone(void)
 
 	cout << "\nSize of yams array = " << sizeof yams << "bytes.\n";
 	cout << "\nSize of one element = " << sizeof yams[0] << "bytes.\n";
+
+	float hotelTips[5] = {5.0, 2.5};
+	short things[] = {1, 5, 3, 8};
+	int num_elements =  sizeof things /sizeof (short);
+
+	cout << "hotelTips[0] = " << hotelTips[0] << endl;
+	cout << "hotelTips[1] = " << hotelTips[1] << endl;
+	cout << "hotelTips[2] = " << hotelTips[2] << endl;
+	cout << "hotelTips[3] = " << hotelTips[3] << endl;
+	cout << "hotelTips[4] = " << hotelTips[4] << endl;
+    cout << "num_elements of short things[] = " << num_elements <<endl;
 }
