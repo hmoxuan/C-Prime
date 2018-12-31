@@ -33,6 +33,15 @@
     <ClInclude Include="instr1.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="instr2.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="instr3.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="numStr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -48,6 +57,15 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="instr1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instr2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="instr3.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="numStr.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
