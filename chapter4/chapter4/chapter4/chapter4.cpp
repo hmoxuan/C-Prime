@@ -9,6 +9,8 @@
 #include "instr2.h"
 #include "instr3.h"
 #include "numStr.h"
+#include "strtype1.h"
+#include "strtype2.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -19,7 +21,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//instr1();
 	//instr2();
 	//instr3();
-	numstr();
+	//numstr();
+	//strtype1();
+	strtype2();
 
 	system("pause");
 	return 0;
