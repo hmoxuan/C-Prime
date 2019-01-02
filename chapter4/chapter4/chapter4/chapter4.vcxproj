@@ -88,6 +88,7 @@
     <ClInclude Include="chapter4string.h" />
     <ClInclude Include="strtype1.h" />
     <ClInclude Include="strtype2.h" />
+    <ClInclude Include="strtype3.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
@@ -104,6 +105,7 @@
     </ClCompile>
     <ClCompile Include="strtype1.cpp" />
     <ClCompile Include="strtype2.cpp" />
+    <ClCompile Include="strtype3.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

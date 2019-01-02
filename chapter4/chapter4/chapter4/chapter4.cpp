@@ -11,6 +11,7 @@
 #include "numStr.h"
 #include "strtype1.h"
 #include "strtype2.h"
+#include "strtype3.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -23,7 +24,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//instr3();
 	//numstr();
 	//strtype1();
-	strtype2();
+	//strtype2();
+	strtype3();
 
 	system("pause");
 	return 0;
