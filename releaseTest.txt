@@ -7,3 +7,4 @@ test release v0.0.2.
 --test change 4 on master branch.
 test release v0.0.3.
 --test change 5 on master branch.
+--test change 6 on master branch.
