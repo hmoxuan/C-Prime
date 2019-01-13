@@ -80,6 +80,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="arrayone.h" />
+    <ClInclude Include="assgn_st.h" />
     <ClInclude Include="instr1.h" />
     <ClInclude Include="instr2.h" />
     <ClInclude Include="instr3.h" />
@@ -95,6 +96,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="arrayone.cpp" />
+    <ClCompile Include="assgn_st.cpp" />
     <ClCompile Include="chapter4.cpp" />
     <ClCompile Include="chapter4string.cpp" />
     <ClCompile Include="instr1.cpp" />
