@@ -13,6 +13,7 @@
 #include "strtype2.h"
 #include "strtype3.h"
 #include "strtype4.h"
+#include "structur.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -27,7 +28,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strtype1();
 	//strtype2();
 	//strtype3();
-	strtype4();
+	//strtype4();
+	structur();
 
 	system("pause");
 	return 0;
