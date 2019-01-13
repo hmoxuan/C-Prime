@@ -86,6 +86,7 @@
     <ClInclude Include="instr2.h" />
     <ClInclude Include="instr3.h" />
     <ClInclude Include="numStr.h" />
+    <ClInclude Include="pointer.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="chapter4string.h" />
     <ClInclude Include="strtype1.h" />
@@ -105,6 +106,7 @@
     <ClCompile Include="instr2.cpp" />
     <ClCompile Include="instr3.cpp" />
     <ClCompile Include="numStr.cpp" />
+    <ClCompile Include="pointer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

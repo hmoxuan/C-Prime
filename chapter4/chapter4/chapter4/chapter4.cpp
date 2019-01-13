@@ -1,6 +1,5 @@
 // chapter4.cpp : Defines the entry point for the console application.
 //
-
 #include "stdafx.h"
 #include <iostream>
 #include "arrayone.h"
@@ -16,6 +15,7 @@
 #include "structur.h"
 #include "assgn_st.h"
 #include "arrstruc.h"
+#include "pointer.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -33,7 +33,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strtype4();
 	//structur();
 	//assgn_st();
-	arrstruc();
+	//arrstruc();
+	pointerFun();
+	int_ptr();
 
 	system("pause");
 	return 0;
