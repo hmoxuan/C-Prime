@@ -15,6 +15,7 @@
 #include "strtype4.h"
 #include "structur.h"
 #include "assgn_st.h"
+#include "arrstruc.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -31,7 +32,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strtype3();
 	//strtype4();
 	//structur();
-	assgn_st();
+	//assgn_st();
+	arrstruc();
 
 	system("pause");
 	return 0;
