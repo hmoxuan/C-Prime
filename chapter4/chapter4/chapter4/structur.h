@@ -5,5 +5,7 @@
 #define __STRUCTUR__H
 
 void structur(void);
+void newstruct(void);
+void deleteOperator(void);
 
 #endif //__STRUCTUR__H

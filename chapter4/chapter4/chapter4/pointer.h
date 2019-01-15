@@ -6,5 +6,9 @@
 
 void pointerFun(void);
 void int_ptr(void);
+void use_new(void);
+void arraynew(void);
+void addpntrs(void);
+void ptrstr(void);
 
 #endif //__POINTER__H

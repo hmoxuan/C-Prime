@@ -34,8 +34,14 @@ int _tmain(int argc, _TCHAR* argv[])
 	//structur();
 	//assgn_st();
 	//arrstruc();
-	pointerFun();
-	int_ptr();
+	//pointerFun();
+	//int_ptr();
+	//use_new();
+	//arraynew();
+	//addpntrs();
+	//ptrstr();
+	//newstruct();
+	deleteOperator();
 
 	system("pause");
 	return 0;
