@@ -66,6 +66,9 @@
     <ClInclude Include="pointer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="mixtypes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -114,6 +117,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="pointer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mixtypes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -85,6 +85,7 @@
     <ClInclude Include="instr1.h" />
     <ClInclude Include="instr2.h" />
     <ClInclude Include="instr3.h" />
+    <ClInclude Include="mixtypes.h" />
     <ClInclude Include="numStr.h" />
     <ClInclude Include="pointer.h" />
     <ClInclude Include="stdafx.h" />
@@ -105,6 +106,7 @@
     <ClCompile Include="instr1.cpp" />
     <ClCompile Include="instr2.cpp" />
     <ClCompile Include="instr3.cpp" />
+    <ClCompile Include="mixtypes.cpp" />
     <ClCompile Include="numStr.cpp" />
     <ClCompile Include="pointer.cpp" />
     <ClCompile Include="stdafx.cpp">

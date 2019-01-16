@@ -16,6 +16,7 @@
 #include "assgn_st.h"
 #include "arrstruc.h"
 #include "pointer.h"
+#include "mixtypes.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -41,7 +42,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//addpntrs();
 	//ptrstr();
 	//newstruct();
-	deleteOperator();
+	//deleteOperator();
+	mixtypes();
 
 	system("pause");
 	return 0;
