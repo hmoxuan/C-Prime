@@ -82,6 +82,7 @@
     <ClInclude Include="arrayone.h" />
     <ClInclude Include="arrstruc.h" />
     <ClInclude Include="assgn_st.h" />
+    <ClInclude Include="choices.h" />
     <ClInclude Include="instr1.h" />
     <ClInclude Include="instr2.h" />
     <ClInclude Include="instr3.h" />
@@ -103,6 +104,7 @@
     <ClCompile Include="assgn_st.cpp" />
     <ClCompile Include="chapter4.cpp" />
     <ClCompile Include="chapter4string.cpp" />
+    <ClCompile Include="choices.cpp" />
     <ClCompile Include="instr1.cpp" />
     <ClCompile Include="instr2.cpp" />
     <ClCompile Include="instr3.cpp" />
