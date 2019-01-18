@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include <iostream>
 #include "forloop.h"
+#include "whileloop.h"
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -19,7 +20,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//forstr2();
 	//equal();
 	//compstr1();
-	compstr2();
+	//compstr2();
+	whileloop();
 
 	system("pause");
 	return 0;
