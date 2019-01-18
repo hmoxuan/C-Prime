@@ -21,7 +21,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//equal();
 	//compstr1();
 	//compstr2();
-	whileloop();
+	//whileloop();
+	//waiting();
+	dowhile();
 
 	system("pause");
 	return 0;

@@ -5,5 +5,7 @@
 #define __WHILE_LOOP__H
 
 void whileloop(void);
+void waiting(void);
+void dowhile(void);
 
 #endif //__WHILE_LOOP__H
