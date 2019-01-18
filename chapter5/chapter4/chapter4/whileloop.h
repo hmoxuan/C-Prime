@@ -7,5 +7,6 @@
 void whileloop(void);
 void waiting(void);
 void dowhile(void);
+void textin1(void);
 
 #endif //__WHILE_LOOP__H

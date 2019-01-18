@@ -55,5 +55,21 @@ void dowhile(void)
 	cout << "Yes, 7 is my favorite.\n";
 }
 
+// 5.16 textin1 -- reading chars with a while loop
+void textin1(void)
+{
+	using namespace std;
+	char ch;
+	int count = 0; // use basic input
+	cout << "Enter characters; enter # to quit: \n";
+	cin >> ch; // get a character
+	while ( ch != '#')
+	{
+		cout << ch;
+		++ count;
+		cin >> ch;
+	}
 
+	cout << endl << count << " characters read.\n";
+}
 
