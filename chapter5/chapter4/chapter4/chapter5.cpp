@@ -23,7 +23,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	//compstr2();
 	//whileloop();
 	//waiting();
-	textin1();
+	//textin1();
+	//textin2();
+	//textin3();
+	//textin4();
+	nested();
 
 	system("pause");
 	return 0;
