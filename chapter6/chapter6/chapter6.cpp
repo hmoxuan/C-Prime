@@ -3,6 +3,7 @@
 #include "stdafx.h"
 #include <iostream>
 #include <climits>
+#include <fstream> // for file I/O
 
 // code 6.1. if -- using the if statement
 void if_func(void)
@@ -366,6 +367,117 @@ void jumpFunc(void)
 	cout << "Done.\n";
 }
 
+// code 6.13 cinfish -- non-numeric input terminates loop
+void cinfish(void)
+{
+    using namespace std;
+	const int Max = 5;
+	double fish[Max];
+	cout << "Please enter the weights of your finsh.\n";
+	cout << "You may enter up to " << Max
+		<< " fish <q to terminate> \n";
+	cout << "fish #1: ";
+	int i = 0;
+	while (i < Max && cin >> fish[i])
+	{
+		if (++i < Max)
+		{
+			cout << "fish #" << i+1 << ": ";
+		}
+	}
+
+	// calculate average
+	double total = 0.0;
+	for (int j = 0; j < i; j++)
+	{
+		total += fish[j];
+	}
+
+	// report results
+	if (i == 0)
+	{
+		cout << "No fish\n";
+	}
+	else
+	{
+		cout << total / i << " = average weight of"
+			<< i << " fish\n";
+	}
+	cout << "Done.\n";
+}
+
+// code 6.14 cingolf -- non-numeric input skipped
+void cingolf(void)
+{
+    using namespace std;
+	const int Max = 5;
+	// get data
+	int golf[Max];
+	cout << "Please enter your golf scores.\n";
+	cout << "You must enter " << Max << " rounds.\n";
+	int i;
+	for (i = 0; i < Max; i++)
+	{
+		cout << "round #" << i+1 << ": ";
+		while ( !(cin >> golf[i]) )
+		{
+			cin.clear(); // reset input
+			while (cin.get() != '\n')
+				continue;
+			cout << "Please enter a number: ";
+		}
+	}
+
+	// calculate average
+	double total = 0.0;
+	for (i = 0; i < Max; i++)
+	{
+		total += golf[i];
+	}
+
+	// report results
+    cout << total / Max << " = average score " << Max << " rounds\n";
+}
+
+// code 6.15 outfile -- writing to a file
+void outfile(void)
+{
+    using namespace std;
+	char automobile[50];
+	int year;
+	double a_price;
+	double d_price;
+
+	ofstream outFile; // create object for output
+	outFile.open("carinfo.txt"); // associate with a file
+	cout << "Enter the make and model of automobil: ";
+	cin.getline(automobile, 50);
+	cout << "Enter the model  year: ";
+	cin >> year;
+	cout << "Enter the original asking price: ";
+	cin >> a_price;
+	d_price = 0.913 * a_price;
+
+	// display information on screen with cout
+	cout << fixed;
+	cout.precision(2);
+	cout.setf(ios_base::showpoint);
+	cout << "Make and model: " << automobile <<endl;
+	cout << "Year:" << year << endl;
+	cout << "Was asking $" << a_price << endl;
+	cout << "Now asking $" << d_price << endl;
+
+	// now do exact same things using outFile instead of cout
+	outFile << fixed;
+	outFile.precision(2);
+	outFile.setf(ios_base::showpoint);
+	outFile << "Make and model: " << automobile << endl;
+	outFile << "Year: " << year << endl;
+	cout << "Was asking $" << a_price << endl;
+	cout << "Now asking $" << d_price << endl;
+
+	outFile.close(); // done with file
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -382,7 +494,10 @@ int _tmain(int argc, _TCHAR* argv[])
 	//conditFunc();
 	//swithcFunc();
 	//enumFunc();
-	jumpFunc();
+	//jumpFunc();
+	//cinfish();
+	//cingolf();
+	outfile();
 
 
 	system("pause");
