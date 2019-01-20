@@ -4,6 +4,7 @@
 #include <iostream>
 #include <climits>
 #include <fstream> // for file I/O
+#include <cstdlib>
 
 // code 6.1. if -- using the if statement
 void if_func(void)
@@ -479,6 +480,60 @@ void outfile(void)
 	outFile.close(); // done with file
 }
 
+// code 6.16 sumafile -- functions with an array argument
+void sumafile(void)
+{
+    using namespace std;
+	const int SIZE = 60;
+	char filename[SIZE];
+	ifstream inFile; // object for handling file input
+	cout << "Ener name of data file: ";
+	cin.getline(filename, SIZE);
+	inFile.open(filename);
+	if (!inFile.is_open())
+	{
+		cout << "Could not open the file " << filename << endl;
+		cout << "Program terminating.\n";
+		exit(EXIT_FAILURE);
+	}
+
+	double value;
+	double sum = 0.0; // number of items read
+	int count = 0;
+	inFile >> value;
+	while (inFile.good())
+	{
+		++count; // one more item read
+		sum += value;
+		inFile >> value; // get next value
+	}
+	
+	if (inFile.eof())
+	{
+		cout << "End of file reached.\n";
+	}
+	else if (inFile.fail())
+	{
+		cout << "Input terminated by daa mismach.\n";
+	}
+	else
+	{
+		cout << "Input terminated for unknown reason.\n";
+	}
+
+    if (count == 0)
+	{
+		cout << "No data processed.\n";
+	}
+	else
+	{
+		cout << "Items read: " << count << endl;
+		cout << "Sum: " << sum << endl;
+		cout << "Average: " << sum / count << endl;
+	}
+	inFile.close();
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	using namespace std;
@@ -497,7 +552,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//jumpFunc();
 	//cinfish();
 	//cingolf();
-	outfile();
+	//outfile();
+	sumafile();
 
 
 	system("pause");
