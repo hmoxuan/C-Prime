@@ -125,7 +125,7 @@ void lotto(void)
 const int ArSize = 8;
 
 // return the sum of an integer array
-long double sum_arr(int arr[], int n)
+int sum_arr(int arr[], int n)
 {
     using namespace std;
 	int total = 0;
@@ -145,6 +145,41 @@ void arrfun1(void)
 	cout << "Total cookies eaten: " << sum << "\n";
 }
 
+/******************************************************
+ * code 7.6 arrfun2 -- functions with an array argument
+ *
+ /****************************************************/
+
+// return the sum of an integer array
+int sum_arr2(int arr[], int n)
+{
+    using namespace std;
+	int total = 0;
+	cout << arr << " = arr, ";
+	cout << sizeof arr << " = sizeof arr \n";
+	for (int i = 0; i < n; i++)
+	{
+		total = total + arr[i];
+	}
+	return total;
+}
+
+void arrfun2(void)
+{
+	using namespace std;
+	int cookies[ArSize] = {1, 2, 4, 8, 16, 32, 64, 128};
+
+	cout << cookies << " = array address, ";
+	cout << sizeof cookies << " = sizeof cookies\n";
+	int sum = sum_arr2(cookies, ArSize);
+	cout << "Total cookies eaten: " << sum << endl;
+
+	sum = sum_arr2(cookies, 3); // a lie
+	cout << "First three eaters ate : " << sum << " cookies." << endl;
+
+	sum = sum_arr2(cookies + 4, 4); // another lie
+	cout << "Last four eaters ate : " << sum << " cookies." << endl;
+}
 
 /******************************************************
  * main function
@@ -157,7 +192,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//protoes();
 	//twoarg();
 	//lotto();
-	arrfun1();
+	//arrfun1();
+	arrfun2();
 
 	system("pause");
 	return 0;
