@@ -260,6 +260,40 @@ void arrfun3(void)
 	cout << "Done.\n";
 }
 
+
+/******************************************************
+ * code 7.8 arrfun4 -- functions with an array argument
+ *
+ /****************************************************/
+// return the sum of an integer array
+int sum_arr4(const int * begin, const int * end)
+{
+	const int * pt;
+	int total = 0;
+
+	for (pt = begin; pt != end; pt++)
+	{
+		total = total + *pt;
+	}
+	return total;
+}
+
+void arrfun4(void)
+{
+	using namespace std;
+	cout << "ArSize = " << ArSize;
+	int cookies[ArSize] = {1, 2, 4, 8, 16, 32, 64, 128};
+
+	int sum = sum_arr4(cookies, cookies + ArSize);
+	cout << "Total cookies eaten: " << sum << endl;
+
+	sum = sum_arr4(cookies, cookies + 3); // first 3 elements
+	cout << "First three eaters ate : " << sum << " cookies." << endl;
+
+	sum = sum_arr4(cookies + 4, cookies + 8); // last 4 elements
+	cout << "Last four eaters ate : " << sum << " cookies." << endl;
+}
+
 /******************************************************
  * main function
  *
@@ -273,7 +307,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//lotto();
 	//arrfun1();
 	//arrfun2();
-	arrfun3();
+	//arrfun3();
+	arrfun4();
 
 	system("pause");
 	return 0;
