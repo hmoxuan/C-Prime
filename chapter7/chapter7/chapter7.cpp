@@ -295,6 +295,37 @@ void arrfun4(void)
 }
 
 /******************************************************
+ * code 7.9 strgfun -- functions with a string argument
+ *
+ /****************************************************/
+unsigned int c_in_str(const char * str, char ch)
+{
+	unsigned int count = 0;
+	while (*str)
+	{
+		if (*str == ch)
+		{
+			count++;
+		}
+		str++;
+	}
+	return count;
+}
+
+void strgfun(void)
+{
+	using namespace std;
+	char mmm[15] = "minimum"; // string in an array
+	char *wail = "ululate";
+	unsigned int ms = c_in_str(mmm, 'm');
+	unsigned int us = c_in_str(mmm, 'u');
+
+	cout << ms << " m characters in " << mmm << endl;
+	cout << us << " u characters in " << wail << endl;
+}
+
+
+/******************************************************
  * main function
  *
  /****************************************************/
@@ -308,7 +339,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//arrfun1();
 	//arrfun2();
 	//arrfun3();
-	arrfun4();
+	//arrfun4();
+	strgfun();
 
 	system("pause");
 	return 0;
