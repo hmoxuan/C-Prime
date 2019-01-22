@@ -324,6 +324,41 @@ void strgfun(void)
 	cout << us << " u characters in " << wail << endl;
 }
 
+/******************************************************
+ * code 7.10 strgback -- a functions that returns a pointer to char
+ *
+ /****************************************************/
+char * buildstr(char c, int n)
+{
+	char * pstr = new char[n+1];
+	pstr[n] = '\0';
+	while (n-- > 0)
+	{
+		pstr[n] = c;
+	}
+	return pstr;
+}
+
+void strgback(void)
+{
+	using namespace std;
+	int times;
+	char ch;
+
+	cout << "Enter a character: ";
+	cin >> ch;
+	cout << "Enter an integer: ";
+	cin >> times;
+
+	char *ps = buildstr(ch, times);
+	cout << ps << endl;
+	delete [] ps;  // free memory
+
+	ps = buildstr('+', 20); // reuse pointer
+	cout << ps << "-DONE-" << ps << endl;
+	delete [] ps;  // free memory
+}
+
 
 /******************************************************
  * main function
@@ -340,7 +375,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//arrfun2();
 	//arrfun3();
 	//arrfun4();
-	strgfun();
+	//strgfun();
+	strgback();
 
 	system("pause");
 	return 0;
