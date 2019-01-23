@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <array>
 
 /******************************************************
  * code 7.1 calling -- defining, prototyping, and calling a function
@@ -497,7 +498,7 @@ void strctptr(void)
 }
 
 /******************************************************
- * code 7.13 topfive -- handling an array of string objects 
+ * code 7.14 topfive -- handling an array of string objects 
  *
  /****************************************************/
 void display(const std::string sa[], int n)
@@ -524,6 +525,43 @@ void topfive(void)
 }
 
 /******************************************************
+ * code 7.15 arrobj -- functions with array objects (C++)
+ *
+ /****************************************************/
+const int Seasons = 4;
+const std::array<std::string, Seasons> Snames = {"Spring", "Summer", "Fall", "Winter"};
+
+void fill_15(std::array<double, Seasons> * pa)
+{
+	using namespace std;
+	for (int i = 0; i < Seasons; i++)
+	{
+		cout << "Enter " << Snames[i] << "expenses: ";
+		cin >> (*pa)[i];
+	}
+}
+
+void show_15(std::array<double, Seasons> da)
+{
+	using namespace std;
+	double total = 0.0;
+	cout << "\nEXPENSES\n";
+	for (int i = 0; i< Seasons; i++)
+	{
+		cout << Snames[i] << ": $" << da[i] << endl;
+		total += da[i];
+	}
+	cout << "Total Expenses: $" << total << endl;
+}
+
+void arrobj(void)
+{
+	std::array<double, Seasons> expenses;
+	fill_15(&expenses);
+	show_15(expenses);
+}
+
+/******************************************************
  * main function
  *
  /****************************************************/
@@ -543,7 +581,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//travel();
 	//atrctfun();
 	//strctptr();
-	topfive();
+	arrobj();
 
 	system("pause");
 	return 0;
