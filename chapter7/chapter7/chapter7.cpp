@@ -457,6 +457,46 @@ void atrctfun(void)
 }
 
 /******************************************************
+ * code 7.13 strctptr -- functions with a pointer to structure argument 
+ *
+ /****************************************************/
+// convert rectangular to polar coordinates
+void rect_to_polar2(const rect * pxy, polar * pda)
+{
+	using namespace std;
+	pda->distance = sqrt( pxy->x * pxy->x  + pxy->y * pxy->y);
+	pda->angle = atan2(pxy->y, pxy->x);
+}
+
+// show polar coordinates, converting angle to degrees
+void show_polar2 (const polar * pda)
+{
+	using namespace std;
+	const double Rad_to_dag = 57.29577951;
+
+	cout << "distance = " << pda->distance;
+	cout << ", angle = " << pda->angle * Rad_to_dag;
+	cout << " degrees \n";
+}
+
+void strctptr(void)
+{
+	using namespace std;
+	rect rplace;
+	polar pplace;
+
+	cout << "Enter the x and y values: ";
+	while( cin >> rplace.x >> rplace.y)
+	{
+		rect_to_polar2(&rplace, &pplace);
+		show_polar2(&pplace);
+		cout << "Next two numbers (q to quit): ";
+	}
+	cout << "Done.\n";
+}
+
+
+/******************************************************
  * main function
  *
  /****************************************************/
@@ -474,7 +514,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strgfun();
 	//strgback();
 	//travel();
-	atrctfun();
+	//atrctfun();
+	strctptr();
 
 	system("pause");
 	return 0;
