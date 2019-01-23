@@ -2,6 +2,7 @@
 //
 #include "stdafx.h"
 #include <iostream>
+#include <string>
 #include <cmath>
 
 /******************************************************
@@ -495,6 +496,32 @@ void strctptr(void)
 	cout << "Done.\n";
 }
 
+/******************************************************
+ * code 7.13 topfive -- handling an array of string objects 
+ *
+ /****************************************************/
+void display(const std::string sa[], int n)
+{
+	using namespace std;
+	for (int i = 0; i < n; i++)
+		cout << i + 1 << ": " << sa[i] << endl;
+}
+
+void topfive(void)
+{
+	using namespace std;
+	const int SIZE = 5;
+	string list[SIZE]; // an array holding 5 string object
+	cout << "Enter your " << SIZE << " favorite astronomical sights:\n";
+	for (int i = 0; i < SIZE; i++)
+	{
+		cout << i + 1 << ": ";
+		getline(cin, list[i]);
+	}
+
+	cout << "Your list: \n";
+	display(list, SIZE);
+}
 
 /******************************************************
  * main function
@@ -515,7 +542,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strgback();
 	//travel();
 	//atrctfun();
-	strctptr();
+	//strctptr();
+	topfive();
 
 	system("pause");
 	return 0;
