@@ -2,6 +2,7 @@
 //
 #include "stdafx.h"
 #include <iostream>
+#include <cmath>
 
 /******************************************************
  * code 7.1 calling -- defining, prototyping, and calling a function
@@ -400,6 +401,60 @@ void travel(void)
 	show_time( sum(trip, day3) );
 }
 
+/******************************************************
+ * code 7.12 atrctfun -- functions with a structure argument 
+ *
+ /****************************************************/
+// structure declarations
+struct polar
+{
+	double distance;
+	double angle;
+};
+
+struct rect
+{
+	double x;
+	double y;
+};
+
+// convert rectangular to polar coordinates
+polar rect_to_polar(rect xypos)
+{
+	using namespace std;
+	polar answer;
+	answer.distance = sqrt( xypos.x * xypos.x  + xypos.y * xypos.y);
+	answer.angle = atan2(xypos.y, xypos.x);
+
+	return answer;
+}
+
+// show polar coordinates, converting angle to degrees
+void show_polar (polar dapos)
+{
+	using namespace std;
+	const double Rad_to_dag = 57.29577951;
+
+	cout << "distance = " << dapos.distance;
+	cout << ", angle = " << dapos.angle * Rad_to_dag;
+	cout << " degrees \n";
+}
+
+void atrctfun(void)
+{
+	using namespace std;
+	rect rplace;
+	polar pplace;
+
+	cout << "Enter the x and y values: ";
+	while( cin >> rplace.x >> rplace.y)
+	{
+		pplace = rect_to_polar(rplace);
+		show_polar(pplace);
+		cout << "Next two numbers (q to quit): ";
+	}
+	cout << "Done.\n";
+}
 
 /******************************************************
  * main function
@@ -418,7 +473,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//arrfun4();
 	//strgfun();
 	//strgback();
-	travel();
+	//travel();
+	atrctfun();
 
 	system("pause");
 	return 0;
