@@ -562,6 +562,26 @@ void arrobj(void)
 }
 
 /******************************************************
+ * code 7.16 recur -- using recursion
+ *
+ /****************************************************/
+void countdown(int n)
+{
+	using namespace std;
+	cout << "Counting down ...  " << n << endl;
+	if (n > 0)
+	{
+		countdown(n-1);
+	}
+	cout << n << " : Kaboom!\n";
+}
+
+void recur(void)
+{
+	countdown(4);
+}
+
+/******************************************************
  * main function
  *
  /****************************************************/
@@ -581,7 +601,8 @@ int _tmain(int argc, _TCHAR* argv[])
 	//travel();
 	//atrctfun();
 	//strctptr();
-	arrobj();
+	//arrobj();
+	recur();
 
 	system("pause");
 	return 0;
