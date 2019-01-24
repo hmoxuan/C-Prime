@@ -581,7 +581,6 @@ void recur(void)
 	countdown(4);
 }
 
-
 /******************************************************
  * code 7.17 ruler -- using recursion to subdivide a ruler
  *
@@ -625,6 +624,115 @@ void ruler(void)
 }
 
 /******************************************************
+ * code 7.18 fun_ptr -- pointers to functions
+ *
+ /****************************************************/
+double betsy(int);
+double pam(int);
+
+// second argument is pointer to a type double function that takes a type in argument.
+void estimate(int lines, double (*pf)(int));
+
+void fun_ptr(void)
+{
+	using namespace std;
+	int code;
+	cout  << "How many lines of code do you need? ";
+	cin >> code;
+	cout << " Here's Betsy's estimate:\n";
+	estimate(code, betsy);
+	cout << " Here's Pam's estimate:\n";
+	estimate(code, pam);
+}
+
+double betsy(int lns)
+{
+	return 0.05 * lns;
+}
+
+double pam(int lns)
+{
+	return 0.03 * lns + 0.0004 * lns * lns;
+}
+
+void estimate(int lines, double (*pf)(int))
+{
+	using namespace std;
+	cout << lines << " lines will take ";
+	cout << (*pf)(lines) << " hour(s)\n";
+}
+
+/******************************************************
+ * code 7.19 arfupt -- an array of function pointers
+ *
+ /****************************************************/
+const double * f1(const double ar[], int n);
+const double * f2(const double [], int);
+const double * f3(const double *, int);
+
+void arfupt(void)
+{
+	using namespace std;
+	double av[3] = {1112.3, 1542.6, 2227.9};
+
+	// pointer to a function
+	const double *(*p1)(const double *, int) = f1;
+	auto p2 = f2;
+
+	// pre-C++11 can use the following code instead
+	// const double *(*p2)(const double *, int) = f2;
+
+	cout << "Using pointers to functions:\n";
+	cout << "Address Value\n";
+	cout << (*p1)(av, 3) << ": " << *(*p1)(av, 3) << endl;
+	cout << (*p2)(av, 3) << ": " << *p2(av, 3) << endl;
+
+	// pa an array of pointers
+	// auto doesn't work with list initialization
+	const double *(*pa[3])(const double *, int) = {f1, f2, f3};
+	auto pb = pa;
+	cout << "\n Using an array of pointers to functions:\n";
+	cout << "Address Value\n";
+	for (int i = 0; i < 3; i++)
+	{
+		cout << pa[i](av, 3) << ": " << *pa[i](av, 3) << endl;
+	}
+
+	cout << "\n Using an pointer to a pointer to a function:\n";
+	cout << "Address Value\n";
+	for (int i = 0; i < 3; i++)
+	{
+		cout << pb[i](av, 3) << ": " << *pb[i](av, 3) << endl;
+	}
+
+	cout << "\n Using pointers to an array of pointers:\n";
+	cout << "Address Value\n";
+	auto pc = &pa;
+	cout << (*pc)[0](av, 3) << ": " << * (*pc)[0](av, 3) << endl;
+
+	const double *(*(*pd)[3])(const double *, int) = &pa;
+	const double *pdb = (*pd)[1](av, 3);
+	cout << pdb << ": " << *pdb << endl;
+
+    cout << (*(*pd)[2])(av, 3) << ": " << *(*(*pd)[2])(av, 3) << endl;
+}
+
+const double * f1(const double ar[], int n)
+{
+	return ar;
+}
+
+const double * f2(const double ar[], int n)
+{
+	return ar + 1;
+}
+
+const double * f3(const double ar[], int n)
+{
+	return ar + 2;
+}
+
+/******************************************************
  * main function
  *
  /****************************************************/
@@ -646,7 +754,9 @@ int _tmain(int argc, _TCHAR* argv[])
 	//strctptr();
 	//arrobj();
 	//recur();
-	ruler();
+	//ruler();
+	//fun_ptr();
+	arfupt();
 
 	system("pause");
 	return 0;
