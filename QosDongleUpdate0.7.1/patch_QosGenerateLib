@@ -1,0 +1,198 @@
+diff --git a/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h b/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
+index 51625748f..9b8bd6b06 100644
+--- a/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
++++ b/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
+@@ -3,10 +3,20 @@
+  * */
+ // Define token names here
+ #define CREATOR_AUTOJOIN_ENABLED        (0x1020)
++#define CREATOR_NWK_STEERING_PRIMARY_CHANNEL_MASK        (0x1028)
++#define CREATOR_NWK_STEERING_SECONDARY_CHANNEL_MASK       (0x1032)
++#define CREATOR_NWK_CREATOR_PRIMARY_CHANNEL_MASK        (0x1033)
++#define CREATOR_NWK_CREATOR_SECONDARY_CHANNEL_MASK       (0x1034)
++
+ #ifdef DEFINETYPES
+ // Include or define any typedef for tokens here
+ #endif //DEFINETYPES
+ #ifdef DEFINETOKENS
+ // Define the actual token storage information here
+-DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x01)
++DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x00)
++DEFINE_BASIC_TOKEN(NWK_STEERING_PRIMARY_CHANNEL_MASK, uint32_t, 0x0318c800UL)
++DEFINE_BASIC_TOKEN(NWK_STEERING_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_PRIMARY_CHANNEL_MASK, uint32_t, 0x02108800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++
+ #endif //DEFINETOKENS
+diff --git a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
+index d92362149..47317e87f 100644
+--- a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
++++ b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
+@@ -155,6 +155,46 @@ EmberStatus emberAfPluginNetworkCreatorNetworkForm(bool centralizedNetwork,
+   return status;
+ }
+ 
++void emberAfPluginNetworkCreatorSetChannelMask(uint32_t mask, bool secondaryMask)
++{
++  if (secondaryMask) {
++    emAfPluginNetworkCreatorSecondaryChannelMask = mask;
++    halCommonSetToken(TOKEN_NWK_CREATOR_SECONDARY_CHANNEL_MASK, &mask);
++  } else {
++    emAfPluginNetworkCreatorPrimaryChannelMask = mask;
++    halCommonSetToken(TOKEN_NWK_CREATOR_PRIMARY_CHANNEL_MASK, &mask);
++  }
++}
++
++#define emberAfDebugNetworkPrint
++void emberAfPluginNetworkCreatorGetChannelMask(void)
++{
++  uint32_t primary_channel_mask = 0xFFFFFFFFUL, second_channel_mask = 0xFFFFFFFFUL;
++  halCommonGetToken(&primary_channel_mask, TOKEN_NWK_CREATOR_PRIMARY_CHANNEL_MASK);
++  halCommonGetToken(&second_channel_mask, TOKEN_NWK_CREATOR_SECONDARY_CHANNEL_MASK);
++  emberAfDebugNetworkPrint("primary_channel_mask=%x, second_channel_mask=%x", primary_channel_mask, second_channel_mask);
++
++  if(primary_channel_mask == 0xFFFFFFFFUL)
++  {
++    emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringPrimaryChannelMask");
++  }
++  else
++  {
++    emAfPluginNetworkCreatorPrimaryChannelMask = primary_channel_mask;
++  }
++
++  if(second_channel_mask == 0xFFFFFFFFUL)
++  {
++    emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringSecondaryChannelMask");
++  }
++  else
++  {
++    emAfPluginNetworkCreatorSecondaryChannelMask = second_channel_mask;
++  }
++
++  emberAfDebugNetworkPrint("PrimaryChannelMask=%x, SecondaryChannelMask=%x", emAfPluginNetworkCreatorPrimaryChannelMask, emAfPluginNetworkCreatorSecondaryChannelMask);
++}
++
+ // -----------------------------------------------------------------------------
+ // Private API Definitions
+ static uint32_t GetLowestRssiChannelMask(void)
+diff --git a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
+index 9cda13596..f35eb64fd 100644
+--- a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
++++ b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
+@@ -328,6 +328,9 @@ void emberAfPluginNetworkSteeringStackStatusCallback(EmberStatus status)
+       emAfPluginNetworkSteeringStateSetUpdateTclk();
+     }
+     emberEventControlSetDelayMS(finishSteeringEvent, randomJitterMS());
++#if defined (C4M_NODE)
++    emberAfCorePrintln("Connection,AssociateDone,0");
++#endif
+     return;
+   }
+ 
+@@ -638,6 +641,7 @@ void emberAfPluginNetworkSteeringFinishSteeringEventHandler(void)
+                        PLUGIN_NAME,
+                        "Broadcasting permit join",
+                        status);
++    emberAfCorePrintln("Zdp,JoinPermitted,%s",(status== 0) ? "True" : "False");
+     cleanupAndStop(status);
+   }
+ }
+diff --git a/Platform/core-stack/zigbee/silabs-623/app/common/inc/custom-tokens.h b/Platform/core-stack/zigbee/silabs-623/app/common/inc/custom-tokens.h
+index 51625748f..9b8bd6b06 100644
+--- a/Platform/core-stack/zigbee/silabs-623/app/common/inc/custom-tokens.h
++++ b/Platform/core-stack/zigbee/silabs-623/app/common/inc/custom-tokens.h
+@@ -3,10 +3,20 @@
+  * */
+ // Define token names here
+ #define CREATOR_AUTOJOIN_ENABLED        (0x1020)
++#define CREATOR_NWK_STEERING_PRIMARY_CHANNEL_MASK        (0x1028)
++#define CREATOR_NWK_STEERING_SECONDARY_CHANNEL_MASK       (0x1032)
++#define CREATOR_NWK_CREATOR_PRIMARY_CHANNEL_MASK        (0x1033)
++#define CREATOR_NWK_CREATOR_SECONDARY_CHANNEL_MASK       (0x1034)
++
+ #ifdef DEFINETYPES
+ // Include or define any typedef for tokens here
+ #endif //DEFINETYPES
+ #ifdef DEFINETOKENS
+ // Define the actual token storage information here
+-DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x01)
++DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x00)
++DEFINE_BASIC_TOKEN(NWK_STEERING_PRIMARY_CHANNEL_MASK, uint32_t, 0x0318c800UL)
++DEFINE_BASIC_TOKEN(NWK_STEERING_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_PRIMARY_CHANNEL_MASK, uint32_t, 0x02108800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++
+ #endif //DEFINETOKENS
+diff --git a/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c b/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
+index d92362149..47317e87f 100644
+--- a/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
++++ b/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-creator/network-creator.c
+@@ -155,6 +155,46 @@ EmberStatus emberAfPluginNetworkCreatorNetworkForm(bool centralizedNetwork,
+   return status;
+ }
+ 
++void emberAfPluginNetworkCreatorSetChannelMask(uint32_t mask, bool secondaryMask)
++{
++  if (secondaryMask) {
++    emAfPluginNetworkCreatorSecondaryChannelMask = mask;
++    halCommonSetToken(TOKEN_NWK_CREATOR_SECONDARY_CHANNEL_MASK, &mask);
++  } else {
++    emAfPluginNetworkCreatorPrimaryChannelMask = mask;
++    halCommonSetToken(TOKEN_NWK_CREATOR_PRIMARY_CHANNEL_MASK, &mask);
++  }
++}
++
++#define emberAfDebugNetworkPrint
++void emberAfPluginNetworkCreatorGetChannelMask(void)
++{
++  uint32_t primary_channel_mask = 0xFFFFFFFFUL, second_channel_mask = 0xFFFFFFFFUL;
++  halCommonGetToken(&primary_channel_mask, TOKEN_NWK_CREATOR_PRIMARY_CHANNEL_MASK);
++  halCommonGetToken(&second_channel_mask, TOKEN_NWK_CREATOR_SECONDARY_CHANNEL_MASK);
++  emberAfDebugNetworkPrint("primary_channel_mask=%x, second_channel_mask=%x", primary_channel_mask, second_channel_mask);
++
++  if(primary_channel_mask == 0xFFFFFFFFUL)
++  {
++    emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringPrimaryChannelMask");
++  }
++  else
++  {
++    emAfPluginNetworkCreatorPrimaryChannelMask = primary_channel_mask;
++  }
++
++  if(second_channel_mask == 0xFFFFFFFFUL)
++  {
++    emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringSecondaryChannelMask");
++  }
++  else
++  {
++    emAfPluginNetworkCreatorSecondaryChannelMask = second_channel_mask;
++  }
++
++  emberAfDebugNetworkPrint("PrimaryChannelMask=%x, SecondaryChannelMask=%x", emAfPluginNetworkCreatorPrimaryChannelMask, emAfPluginNetworkCreatorSecondaryChannelMask);
++}
++
+ // -----------------------------------------------------------------------------
+ // Private API Definitions
+ static uint32_t GetLowestRssiChannelMask(void)
+diff --git a/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c b/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
+index 9cda13596..f35eb64fd 100644
+--- a/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
++++ b/Platform/core-stack/zigbee/silabs-623/protocol/zigbee/app/framework/plugin/network-steering/network-steering.c
+@@ -328,6 +328,9 @@ void emberAfPluginNetworkSteeringStackStatusCallback(EmberStatus status)
+       emAfPluginNetworkSteeringStateSetUpdateTclk();
+     }
+     emberEventControlSetDelayMS(finishSteeringEvent, randomJitterMS());
++#if defined (C4M_NODE)
++    emberAfCorePrintln("Connection,AssociateDone,0");
++#endif
+     return;
+   }
+ 
+@@ -638,6 +641,7 @@ void emberAfPluginNetworkSteeringFinishSteeringEventHandler(void)
+                        PLUGIN_NAME,
+                        "Broadcasting permit join",
+                        status);
++    emberAfCorePrintln("Zdp,JoinPermitted,%s",(status== 0) ? "True" : "False");
+     cleanupAndStop(status);
+   }
+ }

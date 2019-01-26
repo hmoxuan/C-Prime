@@ -1,0 +1,1822 @@
+diff --git a/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h b/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
+index 51625748..9b8bd6b0 100644
+--- a/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
++++ b/Platform/core-stack/combo/combo-22/app/common/inc/custom-tokens.h
+@@ -3,10 +3,20 @@
+  * */
+ // Define token names here
+ #define CREATOR_AUTOJOIN_ENABLED        (0x1020)
++#define CREATOR_NWK_STEERING_PRIMARY_CHANNEL_MASK        (0x1028)
++#define CREATOR_NWK_STEERING_SECONDARY_CHANNEL_MASK       (0x1032)
++#define CREATOR_NWK_CREATOR_PRIMARY_CHANNEL_MASK        (0x1033)
++#define CREATOR_NWK_CREATOR_SECONDARY_CHANNEL_MASK       (0x1034)
++
+ #ifdef DEFINETYPES
+ // Include or define any typedef for tokens here
+ #endif //DEFINETYPES
+ #ifdef DEFINETOKENS
+ // Define the actual token storage information here
+-DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x01)
++DEFINE_BASIC_TOKEN(AUTOJOIN_ENABLED, uint8_t, 0x00)
++DEFINE_BASIC_TOKEN(NWK_STEERING_PRIMARY_CHANNEL_MASK, uint32_t, 0x0318c800UL)
++DEFINE_BASIC_TOKEN(NWK_STEERING_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_PRIMARY_CHANNEL_MASK, uint32_t, 0x02108800UL)
++DEFINE_BASIC_TOKEN(NWK_CREATOR_SECONDARY_CHANNEL_MASK, uint32_t, 0x07FFF800UL)
++
+ #endif //DEFINETOKENS
+diff --git a/Platform/core-stack/combo/combo-22/app/common/inc/debug-printing.h b/Platform/core-stack/combo/combo-22/app/common/inc/debug-printing.h
+index 3799f2a6..bb737600 100644
+--- a/Platform/core-stack/combo/combo-22/app/common/inc/debug-printing.h
++++ b/Platform/core-stack/combo/combo-22/app/common/inc/debug-printing.h
+@@ -1516,10 +1516,10 @@
+ #define emberAfAppPrintBuffer(buffer, len, withSpace) dump_buf((char *)buffer, len)
+ #define emberAfAppPrintString(buffer)
+ #elif defined (CWP_DONGLE)
+-#define emberAfAppPrint(...) emberAfPrint(EMBER_AF_PRINT_APP, __VA_ARGS__)
++#define emberAfAppPrint        logcom_Printc
+ #define emberAfAppPrintln(...) emberAfPrintln(EMBER_AF_PRINT_APP,  __VA_ARGS__)
+ // Blocking IO is enabled for all serial ports, therefore flush calls are unnecessary.
+-#define emberAfAppFlush()
++#define emberAfAppFlush()      logcom_Printc("\r")
+ #define emberAfAppDebugExec(x) if ( emberAfPrintEnabled(EMBER_AF_PRINT_APP) ) { x; }
+ #define emberAfAppPrintBuffer(buffer, len, withSpace) emberAfPrintBuffer(EMBER_AF_PRINT_APP, (buffer), (len), (withSpace))
+ #define emberAfAppPrintString(buffer) emberAfPrintString(EMBER_AF_PRINT_APP, (buffer))
+@@ -1646,7 +1646,7 @@
+ #define emberAfZdoPrintString(buffer)
+ #elif defined (CWP_DONGLE)
+ #define emberAfZdoPrint(...) emberAfPrint(EMBER_AF_PRINT_ZDO, __VA_ARGS__)
+-#define emberAfZdoPrintln(...) emberAfPrintln(EMBER_AF_PRINT_ZDO,  __VA_ARGS__)
++#define emberAfZdoPrintln    logcom_Printfbasic
+ // Blocking IO is enabled for all serial ports, therefore flush calls are unnecessary.
+ #define emberAfZdoFlush()
+ #define emberAfZdoDebugExec(x) if ( emberAfPrintEnabled(EMBER_AF_PRINT_ZDO) ) { x; }
+diff --git a/Platform/core-stack/combo/combo-22/app/common/inc/zigbeestack-api.h b/Platform/core-stack/combo/combo-22/app/common/inc/zigbeestack-api.h
+index f16f89d7..131a607f 100644
+--- a/Platform/core-stack/combo/combo-22/app/common/inc/zigbeestack-api.h
++++ b/Platform/core-stack/combo/combo-22/app/common/inc/zigbeestack-api.h
+@@ -36,6 +36,8 @@ extern "C" {
+ /******************************************************************************
+ * EXPORTED MACROS AND CONSTANTS
+ ******************************************************************************/
++#define BUILD_TEST_COMBO_NODES_SCALABILITY
++
+ #define ZCL_COMMAND_SEND_WIDTH   (100)
+ #define ZCL_COMMAND_SEND_DEPTH   (50)
+ 
+@@ -60,6 +62,13 @@ typedef struct zclCmdTransmit_QueueEntry_t
+     uint8_t  buf[ZCL_COMMAND_QUEUE_ITEM_SIZE];
+ } zclCmdTransmit_QueueEntry_t;
+ 
++/** Use to get mac address. */
++typedef enum {
++  ZCL_USE_CUSTOM_EUI_64 = 0,     /**< MFG_CUSTOM_EUI_64 */
++  ZCL_USE_EMBER_EUI_64,  /**< MFG_EMBER_EUI_64 */
++  ZCL_USE_DEFAULT_EUI_64,  /**< MFG_EMBER_EUI_64 */
++} zclGetMacAddress_TypeDef;
++
+ 
+ 
+ 
+@@ -135,6 +144,7 @@ int8_t zigbeeStack_GetSwVersion(uint8_t* pProjectName,uint8_t keyBitMask,uint8_t
+ int8_t zigbeeStack_SetChannelMask(uint32_t channelMask,uint32_t secondaryChannelMask);
+ int8_t zigbeeStack_ResetToFactoryDefaults(uint8_t reset);
+ int8_t zigbeeStack_GetMacAddress(uint8_t* pMacAddr);
++int8_t zigbeeStack_GetMacAddressOptimize(uint8_t* pMacAddr, uint8_t macFind);
+ int8_t zigbeeStack_SetMacAddress(uint8_t* pMacAddr);
+ int8_t zigbeeStack_SetTxPower(uint8_t powerIndex);
+ int8_t zigbeeStack_GetTxPower(uint8_t* pPowerIndex);
+@@ -172,8 +182,15 @@ void zigbeeStack_ZclCommand_Send(void);
+ 
+ int8_t zigbeeStack_SetAutoJoinEnabled(uint8_t enabled);
+ void   zigbeeStack_JoinNwk();
+-void zigbeeStack_NetworkSteeringSetChannelMask(uint32_t mask, bool secondaryMask);
++int8_t zigbeeStack_NetworkSteeringSetChannelMask(uint32_t mask, bool secondaryMask);
+ void zigbeeStack_NetworkSteeringSetExtendedPanIdFilter(uint8_t* extendedPanId, bool turnFilterOn);
++
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++int8_t zigbeeStack_BleGetMacAddress(uint8_t* pMacAddr);
++int8_t zigbeeStack_BleStartBeaconings(uint32_t intervalInMillseconds,uint8_t channel_map,uint16_t tx_power_dBm);
++int8_t zigbeeStack_BleStopBeaconings(void);
++#endif
++
+ uint8_t zigbeeStack_ZdpSendMgmtPermitJoiningReq2(uint16_t permitDuration);
+ uint16_t zigbeeStack_GetPermitJoiningRemining(void);
+ uint8_t zigbeeStack_GetNetworkParameters(uint8_t* pNwkChannel, uint8_t* pNwkExtPanId);
+diff --git a/Platform/core-stack/combo/combo-22/app/common/src/zigbeestack-api.c b/Platform/core-stack/combo/combo-22/app/common/src/zigbeestack-api.c
+index 3d331872..99bcf92f 100644
+--- a/Platform/core-stack/combo/combo-22/app/common/src/zigbeestack-api.c
++++ b/Platform/core-stack/combo/combo-22/app/common/src/zigbeestack-api.c
+@@ -66,6 +66,8 @@ of any type without the express written permission of Philips Lighting Holding B
+ 
+ #include "hal-config.h"
+ 
++#include "gatt_db.h"
++
+ /******************************************************************************
+ * LOCAL MACROS AND DEFINITIONS
+ ******************************************************************************/
+@@ -118,6 +120,11 @@ static uint16_t s_nextGroupId = 0xffff;
+ //static uint16_t s_nextGroupAlias = 0xffff;
+ static uint16_t s_nextAssignedAlias = 0xffff;
+ 
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY) && defined(CWP_NODE)
++static uint16_t s_advertizer_intervalInMillseconds = 0;
++static uint8_t s_advertizer_channel_map = 0;
++static bool s_advertizer_isEnabled = false;
++#endif
+ 
+ /******************************************************************************
+ * MAIN EVENT HANDLER
+@@ -131,6 +138,12 @@ static uint16_t s_nextAssignedAlias = 0xffff;
+ static void zigbeeStack_GPCommissioningNotification(uint32_t gpdSrcId, uint8_t gpdDeviceId, uint8_t *key);
+ static void zigbeeStack_GPDeviceInfo(uint32_t gpdSrcId, uint8_t *gpdCommandPayload, uint8_t gpdCommandPayloadLength);
+ 
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY) && defined(CWP_NODE)
++static void enableBeaconAdvertisements(uint16_t intervalInMillseconds, uint8_t channel_map, int16 tx_power);
++static void disableBeaconAdvertisements(void);
++static char* bcnAdvertisingChannels(void);
++#endif
++
+ 
+ /******************************************************************************
+ * EXPORTED VARIABLES
+@@ -838,11 +851,43 @@ int8_t zigbeeStack_LongSleep(void)
+ int8_t zigbeeStack_DumpInfo(uint16_t* pUpdateId,uint8_t* pChannel,
+                             uint16_t* pNwkAddr,uint16_t* pPanId,uint8_t* pIeeeAddr)
+ {
+-	EmberNetworkParameters parameters;
+-	emberGetNetworkParameters(&parameters);
++    EmberNetworkParameters parameters;
++#if defined(CWP_NODE)
++	uint32_t currentChannelMask = emAfPluginNetworkSteeringPrimaryChannelMask;
++#else
++	uint32_t currentChannelMask = emAfPluginNetworkCreatorPrimaryChannelMask;
++#endif
++    uint8_t channel;
++    bool found;
++
++    emberGetNetworkParameters(&parameters);
+ 
+     *pUpdateId = parameters.nwkUpdateId;
+-    *pChannel = parameters.radioChannel;
++    if (emberAfNetworkState() == EMBER_JOINED_NETWORK)
++    {
++        *pChannel = parameters.radioChannel;
++    }
++    else
++    {
++#if defined(CWP_NODE)
++        currentChannelMask = emAfPluginNetworkSteeringPrimaryChannelMask;
++#else
++        currentChannelMask = emAfPluginNetworkCreatorPrimaryChannelMask;
++#endif
++
++        channel = EMBER_MIN_802_15_4_CHANNEL_NUMBER;
++        found = false;
++        while ((currentChannelMask) && !(channel > EMBER_MAX_802_15_4_CHANNEL_NUMBER))
++        {
++            if (READBIT(currentChannelMask, channel))
++            {
++                found = true;
++                break;
++            }
++            channel++;
++        }
++        *pChannel = (found == true) ? channel : parameters.radioChannel;
++    }
+     *pPanId = parameters.panId;
+     
+     *pNwkAddr = emberGetNodeId();
+@@ -857,13 +902,21 @@ int8_t zigbeeStack_GetSwVersion(uint8_t* pProjectName,uint8_t keyBitMask,uint8_t
+ 
+ int8_t zigbeeStack_SetChannelMask(uint32_t channelMask,uint32_t secondaryChannelMask)
+ {
++#if defined(CWP_NODE)
+ 	emAfPluginNetworkCreatorPrimaryChannelMask = channelMask;
+ 
+ 	if(secondaryChannelMask)
+ 	{
+ 	    emAfPluginNetworkCreatorSecondaryChannelMask = secondaryChannelMask;
+-	}    
+-	
++	}
++#else
++	emberAfPluginNetworkCreatorSetChannelMask(channelMask, FALSE);
++
++	if(secondaryChannelMask)
++	{
++	    emberAfPluginNetworkCreatorSetChannelMask(channelMask, TRUE);
++	}
++#endif
+     return 0;
+ }
+ 
+@@ -915,11 +968,30 @@ int8_t zigbeeStack_GetMacAddress(uint8_t* pMacAddr)
+     return 0;
+ }
+ 
+-int8_t zigbeeStack_SetMacAddress(uint8_t* pMacAddr)
++int8_t zigbeeStack_GetMacAddressOptimize(uint8_t* pMacAddr, uint8_t macFind)
+ {
++    // Chip's Mac address
++    if(macFind == ZCL_USE_EMBER_EUI_64)
++    {
++      halCommonGetMfgToken(pMacAddr, TOKEN_MFG_EMBER_EUI_64);
++    }
++    else if(macFind == ZCL_USE_CUSTOM_EUI_64) // User's Mac address
++    {
++      halCommonGetMfgToken(pMacAddr, TOKEN_MFG_CUSTOM_EUI_64);
++    }
++    else // Default Mac address
++    {
++      memcpy(pMacAddr, emberGetEui64(),EUI64_SIZE);  
++    }
+     return 0;
+ }
+ 
++extern bool_t set_eui_addr_token(uint8_t *data);
++int8_t zigbeeStack_SetMacAddress(uint8_t* pMacAddr)
++{
++   return set_eui_addr_token(pMacAddr);
++}
++
+ int8_t zigbeeStack_SetTxPower(uint8_t powerIndex)
+ {
+ 	return emberSetRadioPower(powerIndex);
+@@ -936,9 +1008,17 @@ void   zigbeeStack_JoinNwk()
+     emberAfPluginNetworkSteeringStart();
+ }
+ 
+-void zigbeeStack_NetworkSteeringSetChannelMask(uint32_t mask, bool secondaryMask)
++int8_t zigbeeStack_NetworkSteeringSetChannelMask(uint32_t mask, bool secondaryMask)
+ {
+     emAfPluginNetworkSteeringSetChannelMask(mask, secondaryMask);
++#if defined(CWP_NODE)
++    if (secondaryMask) {
++        halCommonSetToken(TOKEN_NWK_STEERING_SECONDARY_CHANNEL_MASK, &mask);
++    } else {
++        halCommonSetToken(TOKEN_NWK_STEERING_PRIMARY_CHANNEL_MASK, &mask);
++    }
++#endif
++    return 0;
+ }
+ 
+ void zigbeeStack_NetworkSteeringSetExtendedPanIdFilter(uint8_t* extendedPanId, bool turnFilterOn)
+@@ -1144,7 +1224,7 @@ void zigbeeStack_ZclCommand_Send(void)
+ 		zclCmd.dstAddr.address.zAddress = (uint16_t)zclCmdQueueEntry.buf[5]+((uint16_t)zclCmdQueueEntry.buf[6]<<8);
+ 		zclCmd.txOptions = (uint16_t)zclCmdQueueEntry.buf[7]+((uint16_t)zclCmdQueueEntry.buf[8]<<8);
+ 		zclCmd.length = (int)zclCmdQueueEntry.buf[9];
+-		//zclCmd.payload = &zclCmdQueueEntry.buf[10];
++		zclCmd.payload = &zclCmdQueueEntry.buf[10];
+ 		frametype = zclCmdQueueEntry.buf[10];
+ 		if (frametype & BIT(2))
+ 		{
+@@ -1164,7 +1244,7 @@ void zigbeeStack_ZclCommand_Send(void)
+ 		}
+ 
+ 		// send the zcl frame to network
+-        status = zigbeeStack_ZclSend(&zclCmd.dstAddr, zclCmd.clusterId, &zclCmdQueueEntry.buf[10], zclCmd.srcEndPoint, zclCmd.dstAddr.endpoint, zclCmd.txOptions);
++        status = zigbeeStack_ZclSend(&zclCmd.dstAddr, zclCmd.clusterId, zclCmd.payload, zclCmd.srcEndPoint, zclCmd.dstAddr.endpoint, zclCmd.txOptions);
+         if(status)
+         {
+ 			logcom_Printfbasic("zigbeeStack_ZclSend err");
+@@ -1177,18 +1257,335 @@ void zigbeeStack_ZclCommand_Send(void)
+         }
+ 
+         // respond to gateway
+-		if(frametype & 0x08)	//server to client
+-		{
+-			logcom_Printfbasic("Zcl,Req,%d,%d", 0, seq);
+-			logcom_Printfbasic("Zcl,Conf,%d,%d,%d", 0, seq, 0);
+-		}
+-		else
+-		{
+-			logcom_Printfbasic("Zcl,Req,%d,%d", 0, seq);
+-		}
++        if(frametype & 0x08)    //server to client
++        {
++#if defined (CWP_NODE)
++            log_Printfbasic("Zcl,Req,%d,%d", 0, seq);
++            log_Printfbasic("Zcl,Conf,%d,%d,%d", zclCmd.srcEndPoint, seq, 0);
++#elif defined (CWP_DONGLE)
++            logcom_Printfbasic("Zcl,Req,%d,%d", 0, seq);
++            logcom_Printfbasic("Zcl,Conf,%d,%d,%d", zclCmd.srcEndPoint, seq, 0);
++#endif
++        }
++        else
++        {
++#if defined (CWP_NODE)
++            log_Printfbasic("Zcl,Req,%d,%d", 0, seq);
++            log_Printfbasic("Zcl,Conf,%d,%d,%d", zclCmd.srcEndPoint, seq, 0);
++#elif defined (CWP_DONGLE)
++            logcom_Printfbasic("Zcl,Req,%d,%d", 0, seq);
++            logcom_Printfbasic("Zcl,Conf,%d,%d,%d", zclCmd.srcEndPoint, seq, 0);
++#endif
++        }
+ 
+     }
+ 
+ 	//logcom_Printfbasic("zigbeeStack_ZclCommand_Send--");
+ }
+ 
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY) && defined(CWP_NODE)
++int8_t zigbeeStack_BleGetMacAddress(uint8_t* pMacAddr)
++{
++  struct gecko_msg_system_get_bt_address_rsp_t *rsp;
++  rsp = gecko_cmd_system_get_bt_address();
++  memcpy(pMacAddr, rsp->address.addr,6);
++  return 0;
++}
++
++int8_t zigbeeStack_BleStartBeaconings(uint32_t intervalInMillseconds,uint8_t channel_map,uint16_t tx_power_dBm)
++{
++	int8_t result=-1;
++
++	if ((intervalInMillseconds<100) || (intervalInMillseconds>10240))
++	{
++		log_Printfbasic("Interval must range between 100 and 10240 milliseconds");
++		return result;
++	}
++
++	if ((channel_map<1) || (channel_map>7))
++	{
++		log_Printfbasic("Channel map must range between 1 and 7");
++		return result;
++	}
++
++	if (s_advertizer_isEnabled)
++	{
++		log_Printfbasic("Stop beaconing first before start");
++		return result;
++	}
++	s_advertizer_intervalInMillseconds = intervalInMillseconds;
++	s_advertizer_channel_map = channel_map;
++	s_advertizer_isEnabled = true;
++
++	enableBeaconAdvertisements(intervalInMillseconds, channel_map, tx_power_dBm*10);
++	log_Printfbasic("Advertising on channels %s", bcnAdvertisingChannels());
++	log_Printfbasic("iBeacon [ON]");
++	log_Printfbasic("Chl %s", bcnAdvertisingChannels());
++	log_Printfbasic("Interval %dms", s_advertizer_intervalInMillseconds);
++	log_Printfbasic("TxPower %ddBm", tx_power_dBm);
++	result=0;
++
++	return result;
++}
++
++int8_t zigbeeStack_BleStopBeaconings(void)
++{
++	disableBeaconAdvertisements();
++	s_advertizer_channel_map = 0;
++	s_advertizer_intervalInMillseconds = 0;
++	s_advertizer_isEnabled = false;
++	log_Printfbasic("iBeacon [OFF]");
++
++	return 0;
++}
++
++// Advertisement data
++#define UINT16_TO_BYTES(n)        ((uint8_t) (n)), ((uint8_t)((n) >> 8))
++#define UINT16_TO_BYTE0(n)        ((uint8_t) (n))
++#define UINT16_TO_BYTE1(n)        ((uint8_t) ((n) >> 8))
++
++#define DEVNAME "DMP%02X%02X"
++#define DEVNAME_LEN 8  // incl term null
++#define UUID_LEN 16 // 128-bit UUID
++
++// iBeacon structure and data
++static struct {
++  uint8_t flagsLen;     /* Length of the Flags field. */
++  uint8_t flagsType;    /* Type of the Flags field. */
++  uint8_t flags;        /* Flags field. */
++  uint8_t mandataLen;   /* Length of the Manufacturer Data field. */
++  uint8_t mandataType;  /* Type of the Manufacturer Data field. */
++  uint8_t compId[2];    /* Company ID field. */
++  uint8_t beacType[2];  /* Beacon Type field. */
++  uint8_t uuid[16];     /* 128-bit Universally Unique Identifier (UUID). The UUID is an identifier for the company using the beacon*/
++  uint8_t majNum[2];    /* Beacon major number. Used to group related beacons. */
++  uint8_t minNum[2];    /* Beacon minor number. Used to specify individual beacons within a group.*/
++  uint8_t txPower;      /* The Beacon's measured RSSI at 1 meter distance in dBm. See the iBeacon specification for measurement guidelines. */
++}
++iBeaconData
++  = {
++  /* Flag bits - See Bluetooth 4.0 Core Specification , Volume 3, Appendix C, 18.1 for more details on flags. */
++  2,  /* length  */
++  0x01, /* type */
++  0x04 | 0x02, /* Flags: LE General Discoverable Mode, BR/EDR is disabled. */
++
++  /* Manufacturer specific data */
++  26,  /* length of field*/
++  0xFF, /* type of field */
++
++  /* The first two data octets shall contain a company identifier code from
++   * the Assigned Numbers - Company Identifiers document */
++  { UINT16_TO_BYTES(0x004C) },
++
++  /* Beacon type */
++  /* 0x0215 is iBeacon */
++  { UINT16_TO_BYTE1(0x0215), UINT16_TO_BYTE0(0x0215) },
++
++  /* 128 bit / 16 byte UUID - generated specially for the DMP Demo */
++  { 0x00, 0x47, 0xe7, 0x0a, 0x5d, 0xc1, 0x47, 0x25, 0x87, 0x99, 0x83, 0x05, 0x44, 0xae, 0x04, 0xf6 },
++
++  /* Beacon major number - not used for this application */
++  { UINT16_TO_BYTE1(256), UINT16_TO_BYTE0(256) },
++
++  /* Beacon minor number  - not used for this application*/
++  { UINT16_TO_BYTE1(0), UINT16_TO_BYTE0(0) },
++
++  /* The Beacon's measured RSSI at 1 meter distance in dBm */
++  /* 0xC3 is -61dBm */
++  // TBD: check?
++  0xC3
++  };
++
++static struct {
++  uint8_t flagsLen;          /**< Length of the Flags field. */
++  uint8_t flagsType;         /**< Type of the Flags field. */
++  uint8_t flags;             /**< Flags field. */
++  uint8_t serLen;            /**< Length of Complete list of 16-bit Service UUIDs. */
++  uint8_t serType;           /**< Complete list of 16-bit Service UUIDs. */
++  uint8_t serviceList[2];    /**< Complete list of 16-bit Service UUIDs. */
++  uint8_t serDataLength;     /**< Length of Service Data. */
++  uint8_t serDataType;       /**< Type of Service Data. */
++  uint8_t uuid[2];           /**< 16-bit Eddystone UUID. */
++  uint8_t frameType;         /**< Frame type. */
++  uint8_t txPower;           /**< The Beacon's measured RSSI at 0 meter distance in dBm. */
++  uint8_t urlPrefix;         /**< URL prefix type. */
++  uint8_t url[10];           /**< URL. */
++} eddystone_data = {
++  /* Flag bits - See Bluetooth 4.0 Core Specification , Volume 3, Appendix C, 18.1 for more details on flags. */
++  2,  /* length  */
++  0x01, /* type */
++  0x04 | 0x02, /* Flags: LE General Discoverable Mode, BR/EDR is disabled. */
++  /* Service field length */
++  0x03,
++  /* Service field type */
++  0x03,
++  /* 16-bit Eddystone UUID */
++  { UINT16_TO_BYTES(0xFEAA) },
++  /* Eddystone-TLM Frame length */
++  0x10,
++  /* Service Data data type value */
++  0x16,
++  /* 16-bit Eddystone UUID */
++  { UINT16_TO_BYTES(0xFEAA) },
++  /* Eddystone-URL Frame type */
++  0x10,
++  /* Tx power */
++  0x00,
++  /* URL prefix - standard */
++  0x00,
++  /* URL */
++  { 's', 'i', 'l', 'a', 'b', 's', '.', 'c', 'o', 'm' }
++};
++
++struct responseData_t{
++  uint8_t flagsLen;          /**< Length of the Flags field. */
++  uint8_t flagsType;         /**< Type of the Flags field. */
++  uint8_t flags;             /**< Flags field. */
++  uint8_t shortNameLen;      /**< Length of Shortened Local Name. */
++  uint8_t shortNameType;     /**< Shortened Local Name. */
++  uint8_t shortName[DEVNAME_LEN]; /**< Shortened Local Name. */
++  uint8_t uuidLength;        /**< Length of UUID. */
++  uint8_t uuidType;          /**< Type of UUID. */
++  uint8_t uuid[UUID_LEN];    /**< 128-bit UUID. */
++};
++
++static struct responseData_t responseData = {
++  2,  /* length (incl type) */
++  0x01, /* type */
++  0x04 | 0x02, /* Flags: LE General Discoverable Mode, BR/EDR is disabled. */
++  DEVNAME_LEN + 1,        // length of local name (incl type)
++  0x08,               // shortened local name
++  { 'D', 'M', '0', '0', ':', '0', '0' },
++  UUID_LEN + 1,           // length of UUID data (incl type)
++  0x06,               // incomplete list of service UUID's
++  // custom service UUID for silabs lamp in little-endian format
++  { 0xc9, 0x1b, 0x80, 0x3d, 0x61, 0x50, 0x0c, 0x97, 0x8d, 0x45, 0x19, 0x7d, 0x96, 0x5b, 0xe5, 0xba }
++};
++  
++enum {HANDLE_DEMO, HANDLE_IBEACON, HANDLE_EDDYSTONE}; //advertisers handle
++static void BeaconAdvertisements(uint16_t devId)
++{
++  static uint8_t *advData;
++  static uint8_t advDataLen;
++
++  iBeaconData.minNum[0] = UINT16_TO_BYTE1(devId);
++  iBeaconData.minNum[1] = UINT16_TO_BYTE0(devId);
++
++  advData = (uint8_t*)&iBeaconData;
++  advDataLen = sizeof(iBeaconData);
++  /* Set custom advertising data */
++  gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_IBEACON, 0, advDataLen, advData);
++  gecko_cmd_le_gap_bt5_set_adv_parameters(HANDLE_IBEACON, 160, 160, 7, 0);
++  gecko_cmd_le_gap_bt5_set_mode(HANDLE_IBEACON, le_gap_user_data, le_gap_non_connectable, 0, le_gap_non_resolvable);
++
++  advData = (uint8_t*)&eddystone_data;
++  advDataLen = sizeof(eddystone_data);
++  /* Set custom advertising data */
++  gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_EDDYSTONE, 0, advDataLen, advData);
++  gecko_cmd_le_gap_bt5_set_adv_parameters(HANDLE_EDDYSTONE, 160, 160, 7, 0);
++  gecko_cmd_le_gap_bt5_set_mode(HANDLE_EDDYSTONE, le_gap_user_data, le_gap_non_connectable, 0, le_gap_non_resolvable);
++}
++
++/**
++ * @brief Function for creating a custom advertisement package
++ *
++ * The function builds the advertisement package according to Apple iBeacon specifications,
++ * configures this as the device advertisement data and starts broadcasting.
++ */
++static void enableBeaconAdvertisements(uint16_t intervalInMillseconds, uint8_t channel_map, int16 tx_power)
++{
++  /* This function sets up a custom advertisement package according to iBeacon specifications.
++   * The advertisement package is 30 bytes long. See the iBeacon specification for further details.
++   */
++
++  uint8_t len = sizeof(iBeaconData);
++  uint8_t *pData = (uint8_t*)(&iBeaconData);
++
++  /* Set tx_power/10 dBm Transmit Power */
++  gecko_cmd_system_set_tx_power(tx_power);
++
++
++  /* Create the device name based on the 16-bit device ID */
++  uint16_t devId;
++  struct gecko_msg_system_get_bt_address_rsp_t* btAddr;
++  btAddr = gecko_cmd_system_get_bt_address();
++  devId = *((uint16*)(btAddr->address.addr));
++
++  // Copy to the local GATT database - this will be used by the BLE stack
++  // to put the local device name into the advertisements, but only if we are
++  // using default advertisements
++
++  static char devName[DEVNAME_LEN];
++  snprintf(devName, DEVNAME_LEN, DEVNAME, devId >> 8, devId & 0xff);
++  log_Printfbasic("devName = %s", devName);
++  gecko_cmd_gatt_server_write_attribute_value(gattdb_device_name,
++                                              0,
++                                              strlen(devName),
++                                              (uint8_t *)devName);
++
++
++  // Copy the shortened device name to the response data, overwriting
++  // the default device name which is set at compile time
++  MEMCOPY(((uint8_t*)&responseData) + 5, devName, 8);
++  
++  /* Set custom advertising data */
++  struct gecko_msg_le_gap_bt5_set_adv_data_rsp_t *rsp;
++  rsp = gecko_cmd_le_gap_bt5_set_adv_data(HANDLE_DEMO, 0, sizeof(responseData), (uint8_t*)&responseData);
++
++  /* Set advertising parameters. 100ms advertisement interval. All channels used.
++   * The first two parameters are minimum and maximum advertising interval, both in
++   * units of (milliseconds * 1.6). The third parameter '7' sets advertising on all channels. */
++  gecko_cmd_le_gap_bt5_set_adv_parameters(HANDLE_DEMO, (uint16)(intervalInMillseconds*1.6), (uint16)(intervalInMillseconds*1.6), channel_map, 1);
++
++  /* Start advertising in user mode and enable connections */
++  gecko_cmd_le_gap_bt5_set_mode(HANDLE_DEMO, le_gap_user_data, le_gap_non_connectable, 0, le_gap_non_resolvable);
++  log_Printfbasic("BLE custom advertisements enabled");
++  
++  BeaconAdvertisements(devId);
++}
++
++static void disableBeaconAdvertisements(void)
++{
++  gecko_cmd_le_gap_bt5_set_mode(0, le_gap_non_discoverable, le_gap_non_connectable, 0, le_gap_non_resolvable);
++}
++
++static char* bcnAdvertisingChannels(void)
++{
++   static char chl_list[20];
++
++    switch (s_advertizer_channel_map)
++    {
++      case 1:
++        strcpy(chl_list, "37");
++        break;
++
++      case 2:
++        strcpy(chl_list, "38");
++        break;
++
++      case 3:
++        strcpy(chl_list, "37 and 38");
++        break;
++
++      case 4:
++        strcpy(chl_list, "39");
++        break;
++
++      case 5:
++        strcpy(chl_list, "37 and 39");
++        break;
++
++      case 6:
++        strcpy(chl_list, "38 and 39");
++        break;
++
++      case 7:
++      default:
++        strcpy(chl_list, "37 38 and 39");
++        break;
++    }
++
++    return chl_list;
++}
++#endif
++
+diff --git a/Platform/core-stack/combo/combo-22/app/dongle/inc/cwp_dongle.h b/Platform/core-stack/combo/combo-22/app/dongle/inc/cwp_dongle.h
+index d41d2417..67423d96 100644
+--- a/Platform/core-stack/combo/combo-22/app/dongle/inc/cwp_dongle.h
++++ b/Platform/core-stack/combo/combo-22/app/dongle/inc/cwp_dongle.h
+@@ -376,6 +376,9 @@
+ // Use this macro to check if OTA Bootload Cluster Server Policy plugin is included
+ #define EMBER_AF_PLUGIN_OTA_SERVER_POLICY
+ 
++// User options for plugin Reporting
++#define EMBER_AF_PLUGIN_REPORTING_TABLE_SIZE MAX_CONFIGURE_REPORTING
++
+ // Use this macro to check if Scan Dispatch plugin is included
+ #define EMBER_AF_PLUGIN_SCAN_DISPATCH
+ // User options for plugin Scan Dispatch
+diff --git a/Platform/core-stack/combo/combo-22/app/dongle/inc/device_info_print.h b/Platform/core-stack/combo/combo-22/app/dongle/inc/device_info_print.h
+index 497842a6..09a47b59 100644
+--- a/Platform/core-stack/combo/combo-22/app/dongle/inc/device_info_print.h
++++ b/Platform/core-stack/combo/combo-22/app/dongle/inc/device_info_print.h
+@@ -44,6 +44,8 @@
+ 
+ #define DEVICE_ANNOUNCE_IN_FIFO   1
+ #define DEVICE_SERVICE_TAG_IN_INFO 2
++#define REPORT_NODE_DEVICE_ADDRESS_INFO 3
++
+ /******************************************************************************/
+ /*                              TYPE DEFINITIONS                              */
+ /******************************************************************************/
+diff --git a/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_callbacks.c b/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_callbacks.c
+index 2561db08..e0032e40 100644
+--- a/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_callbacks.c
++++ b/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_callbacks.c
+@@ -114,6 +114,29 @@ bool emberAfStackStatusCallback(EmberStatus status)
+   // This value is ignored by the framework.
+   return false;
+ }
++static void emAfPluginNetworkSteeringGetChannelMask(void)
++{
++	uint32_t primary_channel_mask = 0xFFFFFFFFUL, second_channel_mask = 0xFFFFFFFFUL;
++	halCommonGetToken(&primary_channel_mask, TOKEN_NWK_STEERING_PRIMARY_CHANNEL_MASK);
++	halCommonGetToken(&second_channel_mask, TOKEN_NWK_STEERING_SECONDARY_CHANNEL_MASK);
++	if(primary_channel_mask == 0xFFFFFFFFUL)
++	{
++	  //emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringPrimaryChannelMask");
++	}
++	else
++	{
++	  emAfPluginNetworkSteeringPrimaryChannelMask = primary_channel_mask;
++	}
++
++	if(second_channel_mask == 0xFFFFFFFFUL)
++	{
++	  //emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringSecondaryChannelMask");
++	}
++	else
++	{
++	  emAfPluginNetworkSteeringSecondaryChannelMask = second_channel_mask;
++	}
++}
+ 
+ /** @brief Main Init
+  *
+@@ -136,6 +159,8 @@ bool emberAfStackStatusCallback(EmberStatus status)
+  */
+ void emberAfMainInitCallback(void)
+ {
++  emAfPluginNetworkSteeringGetChannelMask();
++  emberAfPluginNetworkCreatorGetChannelMask();
+   emberEventControlSetActive(commissioningLedEventControl);
+ }
+ 
+diff --git a/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_startup.c b/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_startup.c
+index 60a3784a..ac4b1210 100644
+--- a/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_startup.c
++++ b/Platform/core-stack/combo/combo-22/app/dongle/src/cwp_dongle_startup.c
+@@ -112,7 +112,7 @@ extern uint8_t emberAfNetworkState(void);
+ void dongle_Startup(void)
+ {
+     /* Start a dummy task, just print a debug message repeatly */
+-    CTIMER_Set(1000, dongle_StartupReady);
++    //CTIMER_Set(1000, dongle_StartupReady);
+     CTIMER_Set(1000, dongle_OpenNetwork);
+ }
+ 
+diff --git a/Platform/core-stack/combo/combo-22/app/node/inc/cwp_node.h b/Platform/core-stack/combo/combo-22/app/node/inc/cwp_node.h
+index ed97c0cb..c45e673f 100644
+--- a/Platform/core-stack/combo/combo-22/app/node/inc/cwp_node.h
++++ b/Platform/core-stack/combo/combo-22/app/node/inc/cwp_node.h
+@@ -276,7 +276,7 @@
+ /**** Debug printing section ****/
+ 
+ // Global switch
+-//#define EMBER_AF_PRINT_ENABLE
++#define EMBER_AF_PRINT_ENABLE
+ // Individual areas
+ #define EMBER_AF_PRINT_CORE 0x0001
+ #define EMBER_AF_PRINT_APP 0x0002
+@@ -316,7 +316,7 @@
+ #define EMBER_AF_PLUGIN_BASIC
+ 
+ #define EMBER_SOURCE_ROUTE_TABLE_SIZE 32
+-#define EMBER_ROUTE_TABLE_SIZE        32
++#define EMBER_ROUTE_TABLE_SIZE        250
+ 
+ // Use this macro to check if Ember Minimal Printf plugin is included
+ #define EMBER_AF_PLUGIN_EMBER_MINIMAL_PRINTF
+diff --git a/Platform/core-stack/combo/combo-22/app/node/src/cwp_node_callbacks.c b/Platform/core-stack/combo/combo-22/app/node/src/cwp_node_callbacks.c
+index feddaf03..7daf0725 100644
+--- a/Platform/core-stack/combo/combo-22/app/node/src/cwp_node_callbacks.c
++++ b/Platform/core-stack/combo/combo-22/app/node/src/cwp_node_callbacks.c
+@@ -315,7 +315,7 @@ size_t appCfgGattServerUserWriteRequestSize = COUNTOF(appCfgGattServerUserWriteR
+ 
+ void static networkUpCallback(void)
+ {
+-  emberEventControlSetDelayMS(networkUpEventControl, 10000);
++  emberEventControlSetDelayMS(networkUpEventControl, 100);
+ }
+ 
+ void static registerNetworkUpCallback(void (*cb)(void))
+@@ -344,8 +344,8 @@ void commissioningLedEventHandler(void)
+ 
+   if (emberAfNetworkState() == EMBER_JOINED_NETWORK) {
+     (void)emRadioGetRandomNumbers(&u16delayTime, 1);
+-    emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(REPORT_PERIOD_SEC, u16delayTime));
+-    emberAfCorePrintln("delay %d+%d sec to reportOnOffStatus", REPORT_PERIOD_SEC, u16delayTime%REPORT_DELAY_TIME_SEC);
++    //emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(REPORT_PERIOD_SEC, u16delayTime));
++    //emberAfCorePrintln("delay %d+%d sec to reportOnOffStatus", REPORT_PERIOD_SEC, u16delayTime%REPORT_DELAY_TIME_SEC);
+   } else {
+     uint8_t autojoin_enabled;
+     eraseUserData(); // crease group/scene info
+@@ -396,8 +396,8 @@ void reportOnOffStatusEventHandler(void)
+   }
+ 
+   (void)emRadioGetRandomNumbers(&u16delayTime, 1);
+-  emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(REPORT_PERIOD_SEC, u16delayTime));
+-  emberAfCorePrintln("reportOnOffStatus event, delay %d+%d sec", REPORT_PERIOD_SEC, u16delayTime%REPORT_DELAY_TIME_SEC);
++  //emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(REPORT_PERIOD_SEC, u16delayTime));
++  //emberAfCorePrintln("reportOnOffStatus event, delay %d+%d sec", REPORT_PERIOD_SEC, u16delayTime%REPORT_DELAY_TIME_SEC);
+ }
+ 
+ void delayOnEventHandler(void)
+@@ -506,8 +506,8 @@ void networkUpEventHandler(void)
+   }
+ 
+   (void)emRadioGetRandomNumbers(&u16delayTime, 1);
+-  emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(1800, u16delayTime));
+-  emberAfCorePrintln("delay %d+%d sec to reportOnOffStatus", 1800, u16delayTime%REPORT_DELAY_TIME_SEC);
++  //emberEventControlSetDelayMS(reportOnOffStatusEventControl, CAL_NEXT_REPORT_TIME_MS(1800, u16delayTime));
++  //emberAfCorePrintln("delay %d+%d sec to reportOnOffStatus", 1800, u16delayTime%REPORT_DELAY_TIME_SEC);
+ }
+ 
+ static void setZllState(uint16_t clear, uint16_t set)
+@@ -564,6 +564,31 @@ static void bleConnectionInfoTableInit(void)
+   }
+ }
+ 
++static void emAfPluginNetworkSteeringGetChannelMask(void)
++{
++	uint32_t primary_channel_mask = 0xFFFFFFFFUL, second_channel_mask = 0xFFFFFFFFUL;
++	halCommonGetToken(&primary_channel_mask, TOKEN_NWK_STEERING_PRIMARY_CHANNEL_MASK);
++	halCommonGetToken(&second_channel_mask, TOKEN_NWK_STEERING_SECONDARY_CHANNEL_MASK);
++	if(primary_channel_mask == 0xFFFFFFFFUL)
++	{
++	  //emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringPrimaryChannelMask");
++	}
++	else
++	{
++	  emAfPluginNetworkSteeringPrimaryChannelMask = primary_channel_mask;
++	}
++
++	if(second_channel_mask == 0xFFFFFFFFUL)
++	{
++	  //emberAfDebugNetworkPrint("Use default emAfPluginNetworkSteeringSecondaryChannelMask");
++	}
++	else
++	{
++	  emAfPluginNetworkSteeringSecondaryChannelMask = second_channel_mask;
++	}
++}
++
++
+ /** @brief Main Init
+  *
+  * This function is called from the application's main function. It gives the
+@@ -585,6 +610,7 @@ static void bleConnectionInfoTableInit(void)
+  */
+ void emberAfMainInitCallback(void)
+ {
++  emAfPluginNetworkSteeringGetChannelMask();
+ #ifdef AUTO_START_COMMISSIONING
+   emberEventControlSetActive(commissioningLedEventControl);
+ #endif
+diff --git a/Platform/core-stack/combo/combo-22/protocol/lib/dongle/zigbeestack-protocol.a b/Platform/core-stack/combo/combo-22/protocol/lib/dongle/zigbeestack-protocol.a
+index aef143d4..02f2d8a3 100644
+Binary files a/Platform/core-stack/combo/combo-22/protocol/lib/dongle/zigbeestack-protocol.a and b/Platform/core-stack/combo/combo-22/protocol/lib/dongle/zigbeestack-protocol.a differ
+diff --git a/Platform/core-stack/combo/combo-22/protocol/lib/node/zigbeestack-protocol.a b/Platform/core-stack/combo/combo-22/protocol/lib/node/zigbeestack-protocol.a
+index 3cd89fbe..774b4fbe 100644
+Binary files a/Platform/core-stack/combo/combo-22/protocol/lib/node/zigbeestack-protocol.a and b/Platform/core-stack/combo/combo-22/protocol/lib/node/zigbeestack-protocol.a differ
+diff --git a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/af-main-common.c b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/af-main-common.c
+index 5b9b7089..ec8949eb 100644
+--- a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/af-main-common.c
++++ b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/af-main-common.c
+@@ -712,6 +712,10 @@ bool emAfProcessZdo(EmberNodeId sender,
+     case END_DEVICE_ANNOUNCE:
+       emberAfZdoPrintln("Device Announce: 0x%2x",
+                         (uint16_t)(message[1]) + (uint16_t)(message[2] << 8));
++      log_Printfbasic("Zdp,ReceivedDeviceAnnounce,S=0x%04X.0,L=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X,%d",
++                        (uint16_t)(message[1]) + (uint16_t)(message[2] << 8),
++                        message[10], message[9], message[8], message[7],message[6], message[5], message[4], message[3],
++                        message[11]);
+       break;
+     case IEEE_ADDRESS_RESPONSE:
+       emberAfZdoPrintln("RX: IEEE Address Response");
+diff --git a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/util.c b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/util.c
+index cd886006..c7428634 100644
+--- a/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/util.c
++++ b/Platform/core-stack/combo/combo-22/protocol/zigbee/app/framework/util/util.c
+@@ -320,25 +320,22 @@ static void printIncomingZclMessage(const EmberAfClusterCommand *cmd)
+ {
+ #if defined(EMBER_AF_PRINT_ENABLE) && defined(EMBER_AF_PRINT_APP)
+   if (emberAfPrintReceivedMessages) {
+-    emberAfAppPrint("\r\nT%4x:", emberAfGetCurrentTime());
+-    emberAfAppPrint("RX len %d, ep %x, clus 0x%2x ",
+-                    cmd->bufLen,
++    uint16_t incomingNodeId = ((cmd->type == EMBER_INCOMING_BROADCAST) ? 0xFFFD : emberGetNodeId());
++    uint16_t index;
++
++    emberAfAppPrint("[Zcl,Ind,S=0x%04X.%d,S=0x%04X.%d,%d,",
++                    cmd->source,
++                    cmd->apsFrame->sourceEndpoint,
++                    incomingNodeId,
+                     cmd->apsFrame->destinationEndpoint,
+                     cmd->apsFrame->clusterId);
+-    emberAfAppDebugExec(emberAfDecodeAndPrintCluster(cmd->apsFrame->clusterId));
+-    if (cmd->mfgSpecific) {
+-      emberAfAppPrint(" mfgId %2x", cmd->mfgCode);
++
++    for (index = 0; index < cmd->bufLen; index++) {
++      emberAfAppPrint("%02x", cmd->buffer[index]);
+     }
+-    emberAfAppPrint(" FC %x seq %x cmd %x payload[",
+-                    cmd->buffer[0], // frame control
+-                    cmd->seqNum,
+-                    cmd->commandId);
+-    emberAfAppFlush();
+-    emberAfAppPrintBuffer(cmd->buffer + cmd->payloadStartIndex, // message
+-                          cmd->bufLen - cmd->payloadStartIndex, // length
+-                          true);                                // spaces?
++
++    emberAfAppPrint("]");
+     emberAfAppFlush();
+-    emberAfAppPrintln("]");
+   }
+ #endif
+ }
+diff --git a/Platform/core-stack/lighting-profile/lightlink/commissioningattrserver/src/zigbee_commissioningattrserver_Controller.c b/Platform/core-stack/lighting-profile/lightlink/commissioningattrserver/src/zigbee_commissioningattrserver_Controller.c
+index 7628337c..0dc63b3d 100644
+--- a/Platform/core-stack/lighting-profile/lightlink/commissioningattrserver/src/zigbee_commissioningattrserver_Controller.c
++++ b/Platform/core-stack/lighting-profile/lightlink/commissioningattrserver/src/zigbee_commissioningattrserver_Controller.c
+@@ -657,9 +657,9 @@ FSMH_HANDLER void SetupCommParams( fsmh_StateMachine_t* pStateMachine, const voi
+     log_Printfbasic("ChannelMask,0x%08X", channelmask);
+ 
+     // set the channel mask in the Ember stack
+-    zigbeeStack_NetworkSteeringSetChannelMask(channelmask, false); // primary channel
+-    channelmask = (~channelmask & ZIGBEE_CHANNEL_MASK);
+-    zigbeeStack_NetworkSteeringSetChannelMask(channelmask, true);  // secondary channel
++//    zigbeeStack_NetworkSteeringSetChannelMask(channelmask, false); // primary channel
++//    channelmask = (~channelmask & ZIGBEE_CHANNEL_MASK);
++//    zigbeeStack_NetworkSteeringSetChannelMask(channelmask, true);  // secondary channel
+ 
+     // set the extended PAN id in the Ember stack
+     log_Printfbasic("extPANID,%02X%02X%02X%02X%02X%02X%02X%02X",
+diff --git a/Platform/infrastructure/scipzigbeeext/inc/scipzigbeeext_Decoder.h b/Platform/infrastructure/scipzigbeeext/inc/scipzigbeeext_Decoder.h
+index 1c931875..3cdc4a34 100644
+--- a/Platform/infrastructure/scipzigbeeext/inc/scipzigbeeext_Decoder.h
++++ b/Platform/infrastructure/scipzigbeeext/inc/scipzigbeeext_Decoder.h
+@@ -74,6 +74,17 @@ zigbee_IeeeAddress_t scipzigbeeext_Decoder_GetIeeeAddress(const Scip_t* pScip, i
+  */
+ zigbee_Address_t scipzigbeeext_Decoder_GetZAddress(const Scip_t* pScip, int32_t *pIndex, scip_Decoder_Error_t* pError);
+ 
++#if defined (CWP_DONGLE)
++/*!
++ * @brief  Attempt to parse an zigbe broad-address from a pScip entity.
++ * @param  [in]     pScip          A pScip instance
++ * @param  [in,out] pIndex         The pIndex of the pScip entity to parse. This function will increase the pIndex regardless of the pError state.
++ * @param  [in,out] pError         The first error encountered by the parser. Parsing is skipped in case *pError != zigbeelink_Decoder_Error_NoError
++ * @return The parsed zigbee broad-address value in case *pError == zigbeelink_Decoder_Error_NoError, the value is undefined otherwise.
++ */
++zigbee_Address_t scipzigbeeext_Decoder_GetBroadcastAddress(const Scip_t* pScip, int32_t *pIndex, scip_Decoder_Error_t* pError);
++#endif
++
+ /*!
+  * @brief  Attempt to parse an zigbe short-address from a pScip entity.
+  * @param  [in]     pScip          A pScip instance
+diff --git a/Platform/infrastructure/scipzigbeeext/src/scipzigbeeext_Decoder.c b/Platform/infrastructure/scipzigbeeext/src/scipzigbeeext_Decoder.c
+index 4f5c1b37..88f4aa12 100644
+--- a/Platform/infrastructure/scipzigbeeext/src/scipzigbeeext_Decoder.c
++++ b/Platform/infrastructure/scipzigbeeext/src/scipzigbeeext_Decoder.c
+@@ -287,6 +287,50 @@ zigbee_Address_t scipzigbeeext_Decoder_GetZAddress(const Scip_t* pScip, int32_t
+     return result;
+ }
+ 
++#if defined (CWP_DONGLE)
++zigbee_Address_t scipzigbeeext_Decoder_GetBroadcastAddress(const Scip_t* pScip, int32_t *pIndex, scip_Decoder_Error_t* pError)
++{
++    zigbee_Address_t result = {{ 0 }};
++    char *strAddress;
++    char type;
++
++    assert( pScip );
++    assert( pIndex );
++    assert( pError );
++
++    strAddress = scip_GetEntity( pScip, *pIndex );
++    ++(*pIndex);
++
++    if ( ! strAddress )
++    {
++        *pError = scip_Decoder_Error_MissingArgument;
++        return result;
++    }
++
++    // skip leading spaces
++    for ( ; isspace(*strAddress); ++strAddress )
++    {
++        // empty
++    }
++
++    type = *strAddress;
++    ++strAddress;
++
++    switch ( type )
++    {
++    case 'B' :
++        result.mode = zigbee_AddrMode_Broadcast;
++        DecodeShortAddressAndEndpoint( &result, strAddress, pError, false );
++        break;
++    default :
++        *pError = scip_Decoder_Error_IncorrectFormatting;
++        break;
++    }
++
++    return result;
++}
++#endif
++
+ //lint -e613
+ uint16_t scipzigbeeext_Decoder_GetShortAddress(const Scip_t* pScip, int32_t *pIndex, scip_Decoder_Error_t* pError)
+ {
+diff --git a/Platform/infrastructure/testframework/src/testframework.c b/Platform/infrastructure/testframework/src/testframework.c
+index ac835ed1..7f49c93a 100644
+--- a/Platform/infrastructure/testframework/src/testframework.c
++++ b/Platform/infrastructure/testframework/src/testframework.c
+@@ -229,6 +229,14 @@ static void ProcessReceivedCommand( Scip_t* pScip )
+                     }
+                 }
+             }
++            else
++            {
++#if defined (CWP_NODE)
++                log_Printfbasic("SYS,Error,Incorrect format");
++#elif defined (CWP_DONGLE)
++                logcom_Printfbasic("SYS,Error,Incorrect format");
++#endif
++            }
+ 
+             // Pass the command to whom is interested
+             if (s_cbCommandUnrecognized != NULL)
+diff --git a/product/cwp/app/dongle/src/cwpdongle_CommandHandler.c b/product/cwp/app/dongle/src/cwpdongle_CommandHandler.c
+index 32a532db..6b164e39 100644
+--- a/product/cwp/app/dongle/src/cwpdongle_CommandHandler.c
++++ b/product/cwp/app/dongle/src/cwpdongle_CommandHandler.c
+@@ -61,6 +61,9 @@ of any type without the express written permission of Philips Lighting Holding B
+ ******************************************************************************/
+ static	Scip_t* s_pScip;
+ 
++static uint8_t transactionSeqNr = 0;
++
++
+ /******************************************************************************
+ * LOCAL TYPES
+ ******************************************************************************/
+@@ -357,6 +360,15 @@ static void C4MCmd_TurnOn(Scip_t *pScip)
+   (void)s_pScip; // Compiler/lint satisfaction
+ }
+ 
++static void C4MCmd_Th_Init(void)
++{
++
++}
++
++static void C4MCmd_Th_TurnOn(Scip_t *pScip)
++{
++    scip_PutCommand(pScip, l_c4m_thCommandHandler.wrapperId, "Ready", NULL, false, 1, 0);
++}
+ 
+ 
+ /******************************************************************************
+@@ -619,7 +631,18 @@ static void ConCmdStartCoordinator(void)
+     int scipIndex = 2;
+     scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
+ 
+-    if (scip_GetInputArgumentCount(s_pScip) == 3)
++    if (scip_GetInputArgumentCount(s_pScip) == 2)
++    {
++		uint16_t nwkPanId = scip_Decoder_GetUint16( s_pScip, &scipIndex, &error );
++		zigbee_ExtPanId_t nwkExtPanId = scipzigbeeext_Decoder_GetExtPanId( s_pScip, &scipIndex, &error );
++
++		(void)nwkPanId;
++		(void)nwkExtPanId;
++
++		logcom_Printfbasic( "Zdp,JoinPermitted,False");
++		zigbeeStack_StartCoordinator2(NULL,NULL,NULL);
++    }
++    else if (scip_GetInputArgumentCount(s_pScip) == 3)
+     {
+ 		uint16_t nwkPanId = scip_Decoder_GetUint16( s_pScip, &scipIndex, &error );
+ 		zigbee_ExtPanId_t nwkExtPanId = scipzigbeeext_Decoder_GetExtPanId( s_pScip, &scipIndex, &error );
+@@ -852,6 +875,7 @@ static void ZGPCmdSetGPDAssignedAlias(void)
+     }
+ }
+ 
++#define BIT(x) (1U << (x))
+ static void ZclCmdSend(void)
+ {
+     // cmd: [Zcl,S,<dstAddrS>,<clusterId>,<zclFrame>,<sourceEndPoint>,<destinationEndPoint>,<txOptions (optional)>]
+@@ -859,6 +883,7 @@ static void ZclCmdSend(void)
+     // description: Send a ZCL command.
+     int index = 2;
+     uint8_t buf[90]={0};
++    uint8_t frametype;
+     
+ 	zclCmdTransmit_t zclCmdTx;
+ 	memset(&zclCmdTx, 0, sizeof(zclCmdTransmit_t));
+@@ -873,6 +898,16 @@ static void ZclCmdSend(void)
+ 		zclCmdTx.dstAddr = scipzigbeeext_Decoder_GetZAddress( s_pScip, &index, &error );
+ 		zclCmdTx.clusterId = scip_Decoder_GetUint16( s_pScip, &index, &error );
+ 		scip_Decoder_GetData(&zclCmdTx.length, zclCmdTx.payload, s_pScip, &index, &error);
++		frametype = zclCmdTx.payload[0];
++		if (frametype & BIT(2))
++		{
++			zclCmdTx.payload[3] = transactionSeqNr;
++		}
++		else
++		{
++			zclCmdTx.payload[1] = transactionSeqNr;
++		}
++		transactionSeqNr++;
+ 		zclCmdTx.srcEndPoint = scip_Decoder_GetUint8( s_pScip, &index, &error ); 
+ 		zclCmdTx.txOptions = 0x040;  //EMBER_APS_OPTION_RETRY
+ 	    zigbeeStack_ZclCommand_PreSend(&zclCmdTx);
+@@ -882,6 +917,16 @@ static void ZclCmdSend(void)
+ 		zclCmdTx.dstAddr = scipzigbeeext_Decoder_GetZAddress( s_pScip, &index, &error );
+ 		zclCmdTx.clusterId = scip_Decoder_GetUint16( s_pScip, &index, &error );
+ 		scip_Decoder_GetData(&zclCmdTx.length, zclCmdTx.payload, s_pScip, &index, &error);
++		frametype = zclCmdTx.payload[0];
++		if (frametype & BIT(2))
++		{
++			zclCmdTx.payload[3] = transactionSeqNr;
++		}
++		else
++		{
++			zclCmdTx.payload[1] = transactionSeqNr;
++		}
++		transactionSeqNr++;
+ 		zclCmdTx.srcEndPoint = scip_Decoder_GetUint8( s_pScip, &index, &error ); 
+ 		zclCmdTx.txOptions = scip_Decoder_GetUint16( s_pScip, &index, &error );
+ 		//uint8_t frametype = buf[0];
+@@ -968,7 +1013,7 @@ static void ZdpCmdSendMgmtPermitJoiningReq(void)
+ 
+     if (scip_GetInputArgumentCount(s_pScip) == 3)
+     {
+-		zigbee_Address_t destAddr = scipzigbeeext_Decoder_GetZAddress( s_pScip, &scipIndex, &error );
++		zigbee_Address_t destAddr = scipzigbeeext_Decoder_GetBroadcastAddress( s_pScip, &scipIndex, &error );
+         uint8_t permitDuration = scip_Decoder_GetUint8( s_pScip, &scipIndex, &error );
+         uint8_t trustCenterSignificance = scip_Decoder_GetUint8( s_pScip, &scipIndex, &error );
+ 
+@@ -1373,7 +1418,7 @@ static void ThCmdDumpInfo(void)
+ 		scip_PutReplyFmt( s_pScip, "ss", 2, "DumpInfo", bufFmt);
+ 
+ 		memset(bufFmt,0,sizeof(bufFmt));
+-		sprintf((char*)bufFmt,"extAddr:L=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
++		sprintf((char*)bufFmt,"extAddr:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+ 								 ieeeAddr[7],ieeeAddr[6],ieeeAddr[5],ieeeAddr[4],ieeeAddr[3],
+ 								 ieeeAddr[2],ieeeAddr[1],ieeeAddr[0]);
+ 		scip_PutReplyFmt( s_pScip, "ss", 2, "DumpInfo", bufFmt);
+@@ -1504,7 +1549,7 @@ static void ThCmdSetMacAddress(void)
+         // comments: it seemed that SiLabs doesn't provide this API to set mac address (ieee address)
+ 		uint8_t result = zigbeeStack_SetMacAddress(ieeeAddr.b);
+ 
+-		scip_PutReplyFmt( s_pScip, "sd", 2, "SetMacAddress", result);
++		scip_PutReplyFmt( s_pScip, "sd", 2, "SetMacAddress", (result == 1) ? 0 : 1);
+     }
+     else
+     {
+@@ -1651,10 +1696,6 @@ void NetworkCreatorCompleteUartSend(void)
+   
+     zigbeeStack_GetExtendedPanId(nwkExtPanId);
+   
+-    logcom_Printfbasic("Zdp,ReceivedDeviceAnnounce,S=0x%04X.0,L=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X,%d",
+-  						 0 /*nwkAddr*/,ieeeAddr[7],ieeeAddr[6],ieeeAddr[5],ieeeAddr[4],ieeeAddr[3],
+-  						 ieeeAddr[2],ieeeAddr[1],ieeeAddr[0],143);
+-    
+     logcom_Printfbasic("Bridge,NetworkSettings,False,0x%04X,%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X,%d,%d,S=0x%04X",
+   						   panId,nwkExtPanId[7],nwkExtPanId[6],nwkExtPanId[5],nwkExtPanId[4],nwkExtPanId[3],
+   						   nwkExtPanId[2],nwkExtPanId[1],nwkExtPanId[0],channel,updateId,nwkAddr);
+@@ -1665,7 +1706,7 @@ void NetworkCreatorCompleteUartSend(void)
+     }
+     else
+     {
+-      logcom_Printfbasic( "Connection,StartCoordinator2,%d",0);
++      logcom_Printfbasic( "Connection,StartCoordinator,%d",0);
+     }
+     logcom_Printfbasic("Connection,StartCoordinatorDone,0,0x%04X,%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X,%d,%d",
+   						   panId,nwkExtPanId[7],nwkExtPanId[6],nwkExtPanId[5],nwkExtPanId[4],nwkExtPanId[3],
+@@ -1809,8 +1850,8 @@ const testframework_Wrapper_t  l_c4m_thCommandHandler =
+ {
+     "TH",
+     sizeof( "TH" ),
+-    C4MCmd_Init,
+-    C4MCmd_TurnOn,
++    C4MCmd_Th_Init,
++    C4MCmd_Th_TurnOn,
+     s_thCommandTable,
+     NULL,
+ };
+diff --git a/product/cwp/app/node/cfg/testframework_Cfg.c b/product/cwp/app/node/cfg/testframework_Cfg.c
+index 8851b37f..f252dbd6 100644
+--- a/product/cwp/app/node/cfg/testframework_Cfg.c
++++ b/product/cwp/app/node/cfg/testframework_Cfg.c
+@@ -30,6 +30,7 @@ of any type without the express written permission of Philips Lighting Holding B
+ #include "lcp_macros.h"
+ 
+ #include "cwpnode_CommandHandler.h"
++#include "zigbeestack-api.h"
+ 
+ /******************************************************************************
+ * TESTFRAMEWORK CONFIGURATION DECLARATIONS
+@@ -54,7 +55,12 @@ const testframework_Wrapper_t* testframework_wrapperList[] =
+     &spiflash_Wrapper,
+     &fcc_Wrapper,
+ 	&l_c4m_cfgCommandHandler,
++	&l_c4m_conCommandHandler,
++	&l_c4m_zclCommandHandler,
+ 	&l_c4m_thCommandHandler,
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++	&l_c4m_bleCommandHandler,
++#endif
+     #if defined(BUILD_TEST_AID)
+ 	&l_c4m_testAidCommandHandler,
+ 	#endif
+diff --git a/product/cwp/app/node/src/cwpnode.c b/product/cwp/app/node/src/cwpnode.c
+index 6da62b43..f1e18799 100644
+--- a/product/cwp/app/node/src/cwpnode.c
++++ b/product/cwp/app/node/src/cwpnode.c
+@@ -989,6 +989,24 @@ static void cwpnode_Init( void )
+ 	dsvcq_evtQueue_init();
+ }
+ 
++static void printNetworkSetting(void)
++{
++    uint16_t updateId;
++    uint8_t  channel;
++    uint16_t nwkAddr;
++    uint16_t panId;
++    uint8_t ieeeAddr[8] = {0};
++    uint8_t nwkExtPanId[8] = {0};
++
++    zigbeeStack_DumpInfo(&updateId,&channel,&nwkAddr,&panId,ieeeAddr);
++    zigbeeStack_GetExtendedPanId(nwkExtPanId);
++    log_Printfbasic("Bridge,NetworkSettings,False,0x%04X,%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X,%d,%d,S=0x%04X",
++                    panId,
++                    nwkExtPanId[7], nwkExtPanId[6], nwkExtPanId[5], nwkExtPanId[4],
++                    nwkExtPanId[3], nwkExtPanId[2], nwkExtPanId[1], nwkExtPanId[0],
++                    channel, updateId, nwkAddr);
++}
++
+ static void NetworkJoinCompleteCallback(void)
+ {
+     #define LUM_25_PERCENTAGE       64 // 254 * 0.25 = 63.5
+@@ -996,6 +1014,8 @@ static void NetworkJoinCompleteCallback(void)
+ 
+     GetMyZigbeeAddr();
+ 
++    printNetworkSetting();
++
+     ENERGYMETERING_TurnOn(1 << E_LINESIDE, FailSafeModeDoWork);
+     zigbee_lightcontrolserver_SetLevel(LUM_25_PERCENTAGE, TRANSITION_TIME_100MS); //
+ }
+@@ -1148,6 +1168,7 @@ static void cwpnode_TurnOn( void )
+     if (emberNetworkState() == 2 /*EMBER_JOINED_NETWORK*/) {
+         ENERGYMETERING_TurnOn(1 << E_LINESIDE, FailSafeModeDoWork);
+         GetMyZigbeeAddr();
++        printNetworkSetting();
+     } else {
+         emberAfRegisterJoinCompleteCallback(NetworkJoinCompleteCallback);
+     }
+@@ -1228,11 +1249,12 @@ static void cwpnode_PreInit( void )
+     usart_Init();
+ 
+     // Start the console and the logging service
++    // In the Qos test, if the baudrate is set to 115200, packets will be lost when the serial DMA interrupts the receiving data
+     Stdout = &s_out;
+     Stdin  = &s_in;
+     s_out.dev = s_in.dev = console_Init(
+             &consoleUsart,
+-            UART_MAX_SPEED,
++            19200, //UART_MAX_SPEED¡¢9600¡¢19200
+             true, // Use DMA
+             CONSOLE_WBUF_SIZE,
+             CONSOLE_RBUF_SIZE );
+diff --git a/product/cwp/app/node/src/cwpnode_CommandHandler.c b/product/cwp/app/node/src/cwpnode_CommandHandler.c
+index 3baa398e..838f96ab 100644
+--- a/product/cwp/app/node/src/cwpnode_CommandHandler.c
++++ b/product/cwp/app/node/src/cwpnode_CommandHandler.c
+@@ -53,6 +53,8 @@ of any type without the express written permission of Philips Lighting Holding B
+ #endif
+ 
+ #include "spiflash.h"
++
++#include "Zcl/Identify/zigbee_Identify_Server.h"
+ /******************************************************************************
+ * LOCAL MACROS AND DEFINITIONS
+ ******************************************************************************/
+@@ -83,6 +85,8 @@ extern int dump_spi_ota_info(void);
+ ******************************************************************************/
+ static	Scip_t* s_pScip;
+ 
++static uint8_t transactionSeqNr = 0;
++
+ /******************************************************************************
+ * COMMAND HANDLER DECLARATIONS
+ ******************************************************************************/
+@@ -123,6 +127,14 @@ static void CmdHeapInfo( void );
+  */
+ static void CmdStackInfo( void );
+ 
++static void ConCmdAssociate(void);
++
++static void ZclCmdSend(void);
++static void ZclCmdRegisterFoundationCommand(void);
++static void ZclCmdRegisterEndpoint(void);
++static void ZclCmdAddClusterToSimpleDescriptor(void);
++static void ZclCmdRegisterCluster(void);
++
+ static void ThCmdGetResetType(void);
+ static void ThCmdShortSleep(void);
+ static void ThCmdLongSleep(void);
+@@ -149,6 +161,15 @@ static void ThCmdDumpOtaState(void);
+ static void ThCmdDumpOtaRecord(void);
+ static void ThCmdWriteOtaRecord(void);
+ static void ThCmdDeleteGroup(void);
++static void ThCmdIdentify( void );
++
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++static void BleCmdGetMacAddress(void);
++static void BleCmdStartBeaconing(void);
++static void BleCmdStopBeaconing(void);
++static void BleCmdStartScanning(void);
++static void BleCmdStopScanning(void);
++#endif
+ 
+ /******************************************************************************
+ * COMMAND MAP
+@@ -173,6 +194,30 @@ static const testframework_Command_t s_cfgCommandTable[] =
+     TESTFRAMEWORK_COMMANDLIST_END
+ };
+ 
++// Connection
++static const testframework_Command_t s_connectCommandTable[] =
++{
++    // Command                  Command handler
++    { "Associate",              ConCmdAssociate},
++
++    // Mandatory end of the command list marker
++    TESTFRAMEWORK_COMMANDLIST_END
++};
++
++// Zcl
++static const testframework_Command_t s_zclCommandTable[] =
++{
++    // Command                  Command handler
++    { "Req",                          ZclCmdSend},
++    { "RegisterFoundationCommand",    ZclCmdRegisterFoundationCommand},
++    { "RegisterEndpoint",             ZclCmdRegisterEndpoint},
++    { "AddClusterToSimpleDescriptor", ZclCmdAddClusterToSimpleDescriptor},
++    { "RegisterCluster",              ZclCmdRegisterCluster},
++
++    // Mandatory end of the command list marker
++    TESTFRAMEWORK_COMMANDLIST_END
++};
++
+ // TH
+ static const testframework_Command_t s_thCommandTable[] =
+ {
+@@ -207,10 +252,26 @@ static const testframework_Command_t s_thCommandTable[] =
+     { "WriteOtaRecord",       ThCmdWriteOtaRecord},
+     { "DumpOtaRecord",        ThCmdDumpOtaRecord},
+     { "DeleteGroup",          ThCmdDeleteGroup},
++    { "Identify",             ThCmdIdentify},
+     // Mandatory end of the command list marker
+     TESTFRAMEWORK_COMMANDLIST_END
+ };
+ 
++// BLE
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++static const testframework_Command_t s_bleCommandTable[] =
++{
++    // Command                  Command handler
++    { "GetMacAddress",          BleCmdGetMacAddress},
++    { "StartBeaconing",         BleCmdStartBeaconing},
++    { "StopBeaconing",          BleCmdStopBeaconing},
++    { "StartScanning",          BleCmdStartScanning},
++    { "StopScanning",           BleCmdStopScanning},
++
++    // Mandatory end of the command list marker
++    TESTFRAMEWORK_COMMANDLIST_END
++};
++#endif
+ 
+ /******************************************************************************
+ * LOCAL FUNCTIONS
+@@ -227,7 +288,15 @@ static void C4MCmd_TurnOn(Scip_t *pScip)
+   (void)s_pScip; // Compiler/lint satisfaction
+ }
+ 
++static void C4MCmd_Th_Init(void)
++{
++
++}
+ 
++static void C4MCmd_Th_TurnOn(Scip_t *pScip)
++{
++    scip_PutCommand(pScip, l_c4m_thCommandHandler.wrapperId, "Ready", NULL, false, 1, 0);
++}
+ 
+ /******************************************************************************
+ * COMMAND HANDLERS
+@@ -336,7 +405,7 @@ static void ThCmdDumpInfo(void)
+ 		scip_PutReplyFmt( s_pScip, "ss", 2, "DumpInfo", bufFmt);
+ 
+ 		memset(bufFmt,0,sizeof(bufFmt));
+-		sprintf((char*)bufFmt,"extAddr:L=%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
++		sprintf((char*)bufFmt,"extAddr:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+ 								 ieeeAddr[7],ieeeAddr[6],ieeeAddr[5],ieeeAddr[4],ieeeAddr[3],
+ 								 ieeeAddr[2],ieeeAddr[1],ieeeAddr[0]);
+ 		scip_PutReplyFmt( s_pScip, "ss", 2, "DumpInfo", bufFmt);
+@@ -379,15 +448,27 @@ static void ThCmdSetChannelMask(void)
+     if (scip_GetInputArgumentCount(s_pScip) == 1)
+     {
+         uint32_t channelMask = scip_Decoder_GetUint32( s_pScip, &scipIndex, &error );
+-		uint8_t result = zigbeeStack_SetChannelMask(channelMask,0);
+-		scip_PutReplyFmt( s_pScip, "sd", 2, "SetChannelMask",result);
++        uint8_t result = 0;
++#if defined(CWP_NODE)
++        result = zigbeeStack_NetworkSteeringSetChannelMask(channelMask, 0);
++        result |= zigbeeStack_NetworkSteeringSetChannelMask(channelMask, 1);
++#else
++        result = zigbeeStack_SetChannelMask(channelMask, 0);
++#endif
++        scip_PutReplyFmt( s_pScip, "sd", 2, "SetChannelMask",result);
+     }
+     else if (scip_GetInputArgumentCount(s_pScip) == 2)
+     {
+         uint32_t channelMask = scip_Decoder_GetUint32( s_pScip, &scipIndex, &error );
+         uint32_t secondaryChannelMask = scip_Decoder_GetUint32( s_pScip, &scipIndex, &error );
+-		uint8_t result = zigbeeStack_SetChannelMask(channelMask,secondaryChannelMask);
+-		scip_PutReplyFmt( s_pScip, "sd", 2, "SetChannelMask",result);
++        uint8_t result;
++#if defined(CWP_NODE)
++        result = zigbeeStack_NetworkSteeringSetChannelMask(channelMask, 0);
++        result |= zigbeeStack_NetworkSteeringSetChannelMask(secondaryChannelMask, 1);
++#else
++        result = zigbeeStack_SetChannelMask(channelMask, secondaryChannelMask);
++#endif
++        scip_PutReplyFmt( s_pScip, "sd", 2, "SetChannelMask",result);
+     }
+     else
+     {
+@@ -429,6 +510,8 @@ static void ThCmdGetMacAddress(void)
+     // response: [TH,GetMacAddress,0,<macAddress>]
+     // description: Returns the MAC address in the form 00:11:22:33:44:55:66:77
+     
++    int scipIndex = 2;
++    scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
+     if (scip_GetInputArgumentCount(s_pScip) == 0)
+     {
+ 		uint8_t ieeeAddr[8] = {0};
+@@ -442,6 +525,17 @@ static void ThCmdGetMacAddress(void)
+ 		
+ 		scip_PutReplyFmt( s_pScip, "sds", 3, "GetMacAddress",result,bufFmt);
+ 	}
++    else if (scip_GetInputArgumentCount(s_pScip) == 1)
++    {
++        uint8_t ieeeAddr[8] = {0};
++        uint8_t macFind = scip_Decoder_GetUint8( s_pScip, &scipIndex, &error );
++        uint8_t bufFmt[128] = {0};
++        uint8_t result = zigbeeStack_GetMacAddressOptimize(ieeeAddr, macFind);
++        sprintf((char*)bufFmt,"%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
++                                 ieeeAddr[7],ieeeAddr[6],ieeeAddr[5],ieeeAddr[4],ieeeAddr[3],
++                                 ieeeAddr[2],ieeeAddr[1],ieeeAddr[0]);
++        scip_PutReplyFmt( s_pScip, "sds", 3, "GetMacAddress",result,bufFmt);
++    }
+     else
+     {
+         log_Printfbasic("INPUT ERROR!");
+@@ -467,7 +561,7 @@ static void ThCmdSetMacAddress(void)
+         // comments: it seemed that SiLabs doesn't provide this API to set mac address (ieee address)
+ 		uint8_t result = zigbeeStack_SetMacAddress(ieeeAddr.b);
+ 
+-		scip_PutReplyFmt( s_pScip, "sd", 2, "SetMacAddress", result);
++		scip_PutReplyFmt( s_pScip, "sd", 2, "SetMacAddress", (result == 1) ? 0 : 1);
+     }
+     else
+     {
+@@ -505,6 +599,169 @@ static void CmdSetAutoJoinEnabled(void)
+ 
+ }
+ 
++#define    TRUE     1
++#define    FALSE    0
++bool isAssociateStarted = FALSE;
++static void ConCmdAssociate(void)
++{
++    // cmd: [Connection,Associate]
++    // response: [Connection,Associate,0,<True|False status>] then [Connection,AssociateDone,<status>]
++    // description: Join a network via association (not supported on Coordinator builds. <status> is -1)
++
++    // cmd: [Connection,Associate,<nwkExtPanId>]
++    // response: [Connection,Associate,0,<True|False status>] then [Connection,AssociateDone,<status>]
++    // description: Join the network with <nwkExtPanId> via association. (not supported on coordinator build. <status> is -1).
++
++    if(scip_GetInputArgumentCount(s_pScip) == 0)
++    {
++        if (zigbeeStack_GetNetwrokState() == 2) // EMBER_JOINED_NETWORK
++        {
++            scip_PutReplyFmt( s_pScip, "sds", 3, "Associate", 0, "False");
++        }
++        else
++        {
++            isAssociateStarted = TRUE;
++            zigbeeStack_JoinNwk();
++            scip_PutReplyFmt( s_pScip, "sds", 3, "Associate", 0, "True");
++        }
++    }
++}
++
++void conAssociateDone(uint8_t result)
++{
++    if (TRUE == isAssociateStarted)
++    {
++        scip_PutReplyFmt( s_pScip, "sd", 2, "AssociateDone", result);
++        isAssociateStarted = FALSE;
++    }
++}
++
++#define BIT(x) (1U << (x))
++static void ZclCmdSend(void)
++{
++    // cmd: [Zcl,S,<dstAddrS>,<clusterId>,<zclFrame>,<sourceEndPoint>,<destinationEndPoint>,<txOptions (optional)>]
++    // response: [Zcl,A] / [Zcl,N,<uint8_t status>]
++    // description: Send a ZCL command.
++    int index = 2;
++    uint8_t buf[90]={0};
++    uint8_t frametype;
++
++    zclCmdTransmit_t zclCmdTx;
++    memset(&zclCmdTx, 0, sizeof(zclCmdTransmit_t));
++    zclCmdTx.payload = &buf[0];
++
++    //int8_t status;
++    scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++    //scip_PutReplyFmt( s_pScip, "s", 1, "A" );
++    zclCmdTx.length = (int)scip_Decoder_GetPayloadSize( s_pScip, index+2, &error );
++    if (scip_GetInputArgumentCount(s_pScip) == 4)
++    {
++        zclCmdTx.dstAddr = scipzigbeeext_Decoder_GetZAddress( s_pScip, &index, &error );
++        zclCmdTx.clusterId = scip_Decoder_GetUint16( s_pScip, &index, &error );
++        scip_Decoder_GetData(&zclCmdTx.length, zclCmdTx.payload, s_pScip, &index, &error);
++        frametype = zclCmdTx.payload[0];
++        if (frametype & BIT(2))
++        {
++            zclCmdTx.payload[3] = transactionSeqNr;
++        }
++        else
++        {
++            zclCmdTx.payload[1] = transactionSeqNr;
++        }
++        transactionSeqNr++;
++        zclCmdTx.srcEndPoint = scip_Decoder_GetUint8( s_pScip, &index, &error );
++        //zclCmdTx.txOptions = 0x040;  //EMBER_APS_OPTION_RETRY
++        //Route repair is performed automatically when EMBER_APS_OPTION_RETRY(0x040) and EMBER_APS_OPTION_ENABLE_ROUTE_DISCOVERY(0x0100) are both set in the message options.
++        zclCmdTx.txOptions  = (0x040 | 0x0100);
++        zigbeeStack_ZclCommand_PreSend(&zclCmdTx);
++    }
++    else if(scip_GetInputArgumentCount(s_pScip) == 5)
++    {
++        zclCmdTx.dstAddr = scipzigbeeext_Decoder_GetZAddress( s_pScip, &index, &error );
++        zclCmdTx.clusterId = scip_Decoder_GetUint16( s_pScip, &index, &error );
++        scip_Decoder_GetData(&zclCmdTx.length, zclCmdTx.payload, s_pScip, &index, &error);
++        frametype = zclCmdTx.payload[0];
++        if (frametype & BIT(2))
++        {
++            zclCmdTx.payload[3] = transactionSeqNr;
++        }
++        else
++        {
++            zclCmdTx.payload[1] = transactionSeqNr;
++        }
++        transactionSeqNr++;
++        zclCmdTx.srcEndPoint = scip_Decoder_GetUint8( s_pScip, &index, &error );
++        zclCmdTx.txOptions = scip_Decoder_GetUint16( s_pScip, &index, &error );
++        //uint8_t frametype = buf[0];
++        zigbeeStack_ZclCommand_PreSend(&zclCmdTx);
++    }
++    else
++    {
++        log_Printfbasic("INPUT ERROR!");
++    }
++}
++
++static void ZclCmdRegisterFoundationCommand(void)
++{
++    // cmd: [Zcl,RegisterFoundationCommand,<foundationCommandId>]
++    // response: [Zcl,RegisterFoundationCommand,<status>] on success, [Zcl,N,-1] on fail
++    // description: Subscribes to received Foundation commands.
++    //int scipIndex = 2;
++    //scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    if (scip_GetInputArgumentCount(s_pScip) == 1)
++    {
++        scip_PutReplyFmt( s_pScip, "su", 2, "RegisterFoundationCommand", 0 );
++    }
++}
++
++static void ZclCmdRegisterEndpoint(void)
++{
++    // cmd: [Zcl,RegisterEndpoint,<sourceEndPoint>,<profileId>,<deviceId>,<appDevVer>,
++    //        <maxInClusters>,<maxOutClusters>,<clientGroupCount>]
++    // response: [Zcl,RegisterEndpoint,<status>] on success, [Zcl,N,<status>] on errors.
++    // description: Register a specific endpoint. The ZigBee chip will check that endpoints are
++    //                  within valid range and unique, the profileID is supported and that the input/output clusters are
++    //                  within range and there is enough space to allocate them. Note: Registering the first ZLL endpoint will
++    //                  trigger the initialization of the RemoteReset functionality.
++    //int scipIndex = 2;
++    //scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    //if (scip_GetInputArgumentCount(s_pScip) == 7)
++    {
++        scip_PutReplyFmt( s_pScip, "su", 2, "RegisterEndpoint", 0 );
++    }
++}
++
++static void ZclCmdAddClusterToSimpleDescriptor(void)
++{
++    // cmd: [Zcl,AddClusterToSimpleDescriptor,<sourceEndPoint>,<direction>,<clusterId>]
++    // response: [Zcl,AddClusterToSimpleDescriptor,<status>] on success. [Zcl,N,-1] on fail
++    // description: Adds the cluster information to the simple descriptor.
++    //                  Note: Registered clusters should also have the cluster added to the appropriate simple descriptor.
++    //int scipIndex = 2;
++    //scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    if (scip_GetInputArgumentCount(s_pScip) == 3)
++    {
++        scip_PutReplyFmt( s_pScip, "su", 2, "AddClusterToSimpleDescriptor", 0 );
++    }
++
++}
++
++static void ZclCmdRegisterCluster(void)
++{
++    // cmd: [Zcl,RegisterCluster,<clusterId>,<manufacturerCode>,<direction>]
++    // response: [Zcl,RegisterCluster,<status>] on success. [Zcl,N,-1] on fail
++    // description: Subscribes to incoming ZCL data frames for the specified cluster and source endpoint
++    //int scipIndex = 2;
++    //scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    if (scip_GetInputArgumentCount(s_pScip) == 3)
++    {
++        scip_PutReplyFmt( s_pScip, "su", 2, "RegisterCluster", 0 );
++    }
++}
+ 
+ static void ThCmdSetTxPower(void)
+ {
+@@ -808,6 +1065,116 @@ static void ThCmdDeleteGroup(void)
+     // dunfa: tbc
+ }
+ 
++static void ThCmdIdentify( void )
++{
++    uint16_t u16time = 0;
++    int scipIndex = 2;
++    scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    zigbee_Zcl_Frame_t zclFrame;
++    zclFrame.header.commandId = 0x00; //zigbee_Identify_Opcode_Identify
++
++    zigbee_Address_t zigbeeAddr;
++    zigbeeAddr.endpoint = 64;
++
++    log_Printbasicfta("Identify");
++
++    if (scip_GetInputArgumentCount(s_pScip) == 1)
++    {
++        u16time = scip_Decoder_GetUint16( s_pScip, &scipIndex, &error );
++        log_Printbasicfta("Identify:time:%d", u16time);
++    }
++    else
++    {
++        log_Printbasicfta("INPUT ERROR!");
++        return;
++    }
++
++    zclFrame.payload.length = 2;
++    zclFrame.payload.data[0] = (uint8_t)(u16time&0x00FF);
++    zclFrame.payload.data[1] = (uint8_t)((u16time>>8)&0x00FF);
++
++    zigbeeidentifyserver_clusterConfiguration.receiver(NULL, &zigbeeAddr, &zclFrame);
++}
++
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++static void BleCmdGetMacAddress(void)
++{
++    // cmd: [BLE,GetMacAddress]
++    // response: [BLE,GetMacAddress,0,<macAddress>]
++    // description: Returns the MAC address in the form 00:11:22:33:44:55
++
++    if (scip_GetInputArgumentCount(s_pScip) == 0)
++    {
++		uint8_t ieeeAddr[6] = {0};
++
++		uint8_t result = zigbeeStack_BleGetMacAddress(ieeeAddr);
++
++		uint8_t bufFmt[128] = {0};
++		sprintf((char*)bufFmt,"%02X:%02X:%02X:%02X:%02X:%02X",
++								 ieeeAddr[5],ieeeAddr[4],ieeeAddr[3],
++								 ieeeAddr[2],ieeeAddr[1],ieeeAddr[0]);
++
++		scip_PutReplyFmt( s_pScip, "sds", 3, "GetMacAddress",result,bufFmt);
++	}
++    else
++    {
++        log_Printfbasic("INPUT ERROR!");
++    }
++}
++
++static void BleCmdStartBeaconing(void)
++{
++    // cmd: [BLE,StartBeaconing,<IntervalInMilliseconds>,<ChannelMap>,<tx_power_dBm>]
++    // response: [BLE,StartBeaconingDone]
++    // description: Returns the
++
++    int scipIndex = 2;
++    scip_Decoder_Error_t error = scip_Decoder_Error_NoError;
++
++    if (scip_GetInputArgumentCount(s_pScip) == 3)
++    {
++		uint32_t intervalInMillseconds = scip_Decoder_GetUint16( s_pScip, &scipIndex, &error );
++		uint8_t channel_map = scip_Decoder_GetUint8( s_pScip, &scipIndex, &error );
++		int tx_power_dBm = scip_Decoder_GetInt16( s_pScip, &scipIndex, &error ); //dBm
++
++		int8_t result = zigbeeStack_BleStartBeaconings(intervalInMillseconds, channel_map, tx_power_dBm);
++
++		scip_PutReplyFmt( s_pScip, "sd", 2, "StartBeaconingDone", result);
++    }
++    else
++    {
++        log_Printfbasic("INPUT ERROR!");
++    }
++}
++
++static void BleCmdStopBeaconing(void)
++{
++    // cmd: [BLE,StopBeaconing]
++    // response: [BLE,StopBeaconing,iBeacon [OFF]]
++    // description: Returns the
++
++    if (scip_GetInputArgumentCount(s_pScip) == 0)
++    {
++		int8_t result = zigbeeStack_BleStopBeaconings();
++		scip_PutReplyFmt( s_pScip, "ss", 2, "StopBeaconingDone",result);
++	}
++    else
++    {
++        log_Printfbasic("INPUT ERROR!");
++    }
++}
++
++static void BleCmdStartScanning(void)
++{
++    // dunfa: tbc
++}
++
++static void BleCmdStopScanning(void)
++{
++    // dunfa: tbc
++}
++#endif
+ 
+ #if defined(BUILD_TEST_AID)
+ extern uint8_t start_distribute_network(uint8_t u8Channel);
+@@ -962,15 +1329,47 @@ const testframework_Wrapper_t  l_c4m_cfgCommandHandler =
+     NULL,
+ };
+ 
++
++const testframework_Wrapper_t  l_c4m_conCommandHandler =
++{
++    "Connection",
++    sizeof( "Connection" ),
++    C4MCmd_Init,
++    C4MCmd_TurnOn,
++    s_connectCommandTable,
++    NULL,
++};
++
++const testframework_Wrapper_t  l_c4m_zclCommandHandler =
++{
++    "Zcl",
++    sizeof( "Zcl" ),
++    C4MCmd_Init,
++    C4MCmd_TurnOn,
++    s_zclCommandTable,
++    NULL,
++};
+ const testframework_Wrapper_t  l_c4m_thCommandHandler =
+ {
+     "TH",
+     sizeof( "TH" ),
++    C4MCmd_Th_Init,
++    C4MCmd_Th_TurnOn,
++    s_thCommandTable,
++    NULL,
++};
++
++#if defined(BUILD_TEST_COMBO_NODES_SCALABILITY)
++const testframework_Wrapper_t  l_c4m_bleCommandHandler =
++{
++    "BLE",
++    sizeof( "BLE" ),
+     C4MCmd_Init,
+     C4MCmd_TurnOn,
+-    s_thCommandTable,
++    s_bleCommandTable,
+     NULL,
+ };
++#endif
+ 
+ #if defined(BUILD_TEST_AID)
+ const testframework_Wrapper_t  l_c4m_testAidCommandHandler =
+diff --git a/product/cwp/app/node/src/cwpnode_CommandHandler.h b/product/cwp/app/node/src/cwpnode_CommandHandler.h
+index 2ab174d4..2fec0fa6 100644
+--- a/product/cwp/app/node/src/cwpnode_CommandHandler.h
++++ b/product/cwp/app/node/src/cwpnode_CommandHandler.h
+@@ -51,7 +51,10 @@ extern "C" {
+  * @brief The command handler instance for the sensic testframework related commands.
+  */
+ extern const testframework_Wrapper_t  l_c4m_cfgCommandHandler;
++extern const testframework_Wrapper_t  l_c4m_conCommandHandler;
++extern const testframework_Wrapper_t  l_c4m_zclCommandHandler;
+ extern const testframework_Wrapper_t  l_c4m_thCommandHandler;
++extern const testframework_Wrapper_t  l_c4m_bleCommandHandler;
+ extern const testframework_Wrapper_t  l_c4m_testAidCommandHandler;
+ 
+ 
+diff --git a/product/cwp/app/node/src/cwpnode_Persistency.c b/product/cwp/app/node/src/cwpnode_Persistency.c
+index 18b9131d..fbf34e24 100644
+--- a/product/cwp/app/node/src/cwpnode_Persistency.c
++++ b/product/cwp/app/node/src/cwpnode_Persistency.c
+@@ -117,6 +117,8 @@ static osa_QueueHandle_t s_PersistencyQueueHandle;
+  * @brief Light status configuration data
+  */
+ static cwpnode_persistencyLightStatusData_t s_sLightStatusConfData;
++
++bool c4mnode_printDdrConfigInfo = false;
+ /******************************************************************************
+ * MAIN EVENT HANDLER
+ ******************************************************************************/
+@@ -133,6 +135,8 @@ extern uint16_t halGetExtendedResetInfo(void);
+ #ifdef DEBUG_DDR_PERSISTENCY
+ static void dumpDdrConf(filedefinition_DdrConf_Data_t *p)
+ {
++  if (c4mnode_printDdrConfigInfo)
++  {
+     log_Printfbasic("internalALSsensor =    %d", p->internalALSsensor    );
+     log_Printfbasic("interruptFadeAllowed = %d", p->interruptFadeAllowed );
+     log_Printfbasic("ddrAlgorithm =         %d", p->ddrAlgorithm         );
+@@ -152,6 +156,7 @@ static void dumpDdrConf(filedefinition_DdrConf_Data_t *p)
+     log_Printfbasic("z =                    %d", p->z                    );
+     log_Printfbasic("offsetEstimate =       %d", p->offsetEstimate       );
+     log_Printfbasic("reserved_1 =           %d", p->reserved_1           );
++  }
+ }
+ #endif
+ 
